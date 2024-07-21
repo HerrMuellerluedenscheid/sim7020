@@ -2,7 +2,7 @@
 #![no_main]
 
 use defmt_rtt as _;
-mod at_command;
+pub mod at_command;
 
 mod utils;
 
@@ -13,7 +13,6 @@ use defmt::*;
 use embedded_hal::digital::OutputPin;
 use panic_probe as _;
 
-use fugit::RateExtU32;
 // Provide an alias for our BSP so we can switch targets quickly.
 // Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
 use rp_pico as bsp;
@@ -57,9 +56,9 @@ type ModemReader = Reader<
     ),
 >;
 
-struct Modem {
-    writer: ModemWriter,
-    reader: ModemReader,
+pub struct Modem {
+    pub writer: ModemWriter,
+    pub reader: ModemReader,
 }
 
 #[derive(Debug)]
@@ -69,7 +68,7 @@ pub enum AtError {
 }
 
 impl Modem {
-    fn send_and_wait_reply<T: AtRequest + Format>(
+    pub fn send_and_wait_reply<T: AtRequest + Format>(
         &mut self,
         payload: T,
     ) -> Result<[u8; BUFFER_SIZE], AtError> {

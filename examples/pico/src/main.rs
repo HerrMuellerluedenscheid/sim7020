@@ -6,11 +6,10 @@
 #![no_main]
 
 use defmt_rtt as _;
-mod at_command;
 
-mod utils;
+use sim7020::at_command;
+use sim7020::Modem;
 
-use at_command::AtRequest;
 use bsp::entry;
 use core::fmt::Debug;
 use defmt::*;
@@ -23,7 +22,6 @@ use fugit::RateExtU32;
 use rp_pico as bsp;
 // use sparkfun_pro_micro_rp2040 as bsp;
 
-use crate::at_command::at;
 use bsp::hal::{
     clocks::init_clocks_and_plls,
     gpio::{FunctionUart, Pins},
@@ -63,8 +61,8 @@ fn main() -> ! {
         &mut pac.RESETS,
         &mut watchdog,
     )
-        .ok()
-        .unwrap();
+    .ok()
+    .unwrap();
 
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 

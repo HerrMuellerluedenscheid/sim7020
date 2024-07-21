@@ -20,7 +20,6 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 
 # We're using a Pico by default on this template
 rp-pico = "0.9"
-fugit = "0.3.7"
 hex = { version = "0.4.3", default-features = false }
 
 # If you're not going to use a Board Support Package you'll need these:
