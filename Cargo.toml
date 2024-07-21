@@ -2,12 +2,12 @@ workspace = { members = ["examples/pico"] }
 
 [lib]
 
-
 [package]
 edition = "2021"
 name = "sim7020"
 version = "0.1.0"
 license = "MIT"
+description = "driver for sim7020E NB IoT modem"
 
 [dependencies]
 cortex-m = "0.7"
