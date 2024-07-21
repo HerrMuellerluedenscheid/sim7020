@@ -1,0 +1,25 @@
+use crate::ModemWriter;
+
+pub mod at;
+pub(crate) mod at_cgatt;
+pub mod at_cgmm;
+pub(crate) mod at_cpin;
+pub mod at_creg;
+pub mod at_csq;
+pub mod at_cstt;
+pub mod ate;
+pub mod ati;
+pub mod cgcontrdp;
+pub mod mqtt;
+pub(crate) mod network_information;
+pub mod ntp;
+
+pub trait AtResponse {
+    fn parse(response: &str) {}
+}
+
+pub trait AtRequest {
+    type Response;
+
+    fn send(&self, writer: &mut ModemWriter);
+}
