@@ -1,5 +1,8 @@
 workspace = { members = ["examples/pico"] }
 
+[lib]
+
+
 [package]
 edition = "2021"
 name = "sim7020"
