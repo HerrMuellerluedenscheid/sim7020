@@ -1,6 +1,5 @@
 use crate::at_command::AtRequest;
 use crate::{AtError};
-use embedded_io::Error;
 use defmt::{Format, info};
 
 #[derive(Format)]

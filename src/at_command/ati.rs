@@ -1,13 +1,11 @@
-use crate::at_command::{AtRequest, AtResponse};
+use crate::at_command::{AtRequest};
 use defmt::Format;
 use embedded_io::Write;
 
 #[derive(Format)]
 pub struct AtI;
 
-pub struct ProductInformation {
-    dummy: u8,
-}
+pub struct ProductInformation {}
 
 impl AtRequest for AtI {
     type Response = ProductInformation;
