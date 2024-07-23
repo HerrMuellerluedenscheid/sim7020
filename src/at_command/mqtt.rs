@@ -2,7 +2,6 @@ use crate::at_command::{AtRequest, AtResponse};
 use crate::utils::split_u16_to_u8;
 use crate::{AtError};
 use embedded_io::Write;
-use cortex_m::prelude::_embedded_hal_serial_Write;
 use defmt::export::write;
 use defmt::{error, info, Format};
 use hex;

@@ -21,9 +21,6 @@ use panic_probe as _;
 
 use crate::at_command::at;
 
-use cortex_m::asm::delay;
-use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_serial_Read};
-
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
 const CR: u8 = 13;
