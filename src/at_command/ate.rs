@@ -1,6 +1,6 @@
 use crate::at_command::AtRequest;
-use crate::{AtError, ModemWriter};
-use core::fmt::Write;
+use crate::{AtError};
+use embedded_io::Write;
 use defmt::Format;
 
 #[derive(Format, Clone, Copy)]
@@ -18,10 +18,10 @@ pub struct AtEcho {
 impl AtRequest for AtEcho {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: Write>(&self, writer: &mut T) {
         let status = self.status as u8;
-        writer.write_str("ATE").unwrap();
-        writer.write_full_blocking(&[status]);
-        writer.write_str("\r\n").unwrap();
+        writer.write("ATE".as_bytes()).unwrap();
+        writer.write(&[status]).unwrap();
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }

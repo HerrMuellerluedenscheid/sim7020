@@ -1,7 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse};
 use crate::utils::split_u16_to_u8;
-use crate::{AtError, ModemWriter};
-use core::fmt::Write;
+use crate::{AtError};
+use embedded_io::Write;
 use cortex_m::prelude::_embedded_hal_serial_Write;
 use defmt::export::write;
 use defmt::{error, info, Format};
@@ -20,7 +20,7 @@ pub struct NewMQTTConnection<'a> {
 impl AtRequest for NewMQTTConnection<'_> {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: Write>(&self, writer: &mut T) {
         // TODO: move into new
         if self.port > 65535 {
             error!("port is out of range")
@@ -35,9 +35,9 @@ impl AtRequest for NewMQTTConnection<'_> {
         let port = split_u16_to_u8(self.port);
         let timeout = split_u16_to_u8(self.timeout_ms);
         let buffer_size = split_u16_to_u8(self.buffer_size);
-        writer.write_str("AT+CMQNEW=").unwrap();
-        writer.write_str("88.198.226.54,1883,5000,600").unwrap();
-        // writer.write_str(self.server).unwrap();
+        writer.write("AT+CMQNEW=".as_bytes()).unwrap();
+        writer.write("88.198.226.54,1883,5000,600".as_bytes()).unwrap();
+        // writer.write(self.server).unwrap();
         // writer.write_char(',').unwrap();
         // writer.write_full_blocking(&port);
         // writer.write_char(',').unwrap();
@@ -45,7 +45,7 @@ impl AtRequest for NewMQTTConnection<'_> {
         // writer.write_char(',').unwrap();
         // writer.write_full_blocking(&buffer_size);
         // // hier muss noch die cid hin falls nicht none
-        writer.write_str("\r\n").unwrap();
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }
 
@@ -55,9 +55,9 @@ pub struct CloseMQTTConnection {}
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: Write>(&self, writer: &mut T) {
         // todo fix hard coded client id
-        writer.write_str("AT+CMQDISCON=0\r\n").unwrap();
+        writer.write("AT+CMQDISCON=0\r\n".as_bytes()).unwrap();
     }
 }
 
@@ -67,11 +67,11 @@ pub struct MQTTConnect {}
 impl AtRequest for MQTTConnect {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: Write>(&self, writer: &mut T) {
         //
         writer
-            .write_str("AT+CMQCON=0,4,234343493,120,0,0,marius,Haufenhistory\r\n")
-            .unwrap()
+            .write("AT+CMQCON=0,4,234343493,120,0,0,marius,Haufenhistory\r\n".as_bytes())
+            .unwrap();
     }
 }
 
@@ -100,21 +100,21 @@ pub struct MQTTRawData {}
 impl AtRequest for MQTTRawData {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CREVHEX=0\r\n").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("AT+CREVHEX=0\r\n".as_bytes()).unwrap();
     }
 }
 
 impl AtRequest for MQTTPublish {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: Write>(&self, writer: &mut T) {
         let mut buffer: [u8; 4] = [0; 4];
         hex::encode_to_slice(b"hi", &mut buffer).unwrap();
 
-        writer.write_str("AT+CMQPUB=0,\"test\",1,0,0,4,\"").unwrap();
-        writer.write_full_blocking(&buffer);
-        writer.write_str("\"\r\n").unwrap();
+        writer.write("AT+CMQPUB=0,\"test\",1,0,0,4,\"".as_bytes()).unwrap();
+        writer.write(&buffer).unwrap();
+        writer.write("\"\r\n".as_bytes()).unwrap();
     }
 }
 
@@ -124,8 +124,8 @@ pub struct MQTTSubscribe {}
 impl AtRequest for MQTTSubscribe {
     type Response = ();
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CMQSUB=0,\"test\",1").unwrap();
-        writer.write_str("\r\n").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("AT+CMQSUB=0,\"test\",1".as_bytes()).unwrap();
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }

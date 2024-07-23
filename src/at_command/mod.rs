@@ -1,4 +1,3 @@
-use crate::ModemWriter;
 
 pub mod at;
 pub mod at_cgatt;
@@ -21,5 +20,5 @@ pub trait AtResponse {
 pub trait AtRequest {
     type Response;
 
-    fn send(&self, writer: &mut ModemWriter);
+    fn send<T: embedded_io::Write>(&self, writer: &mut T);
 }

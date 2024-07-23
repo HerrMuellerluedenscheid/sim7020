@@ -1,7 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{AtError, ModemWriter};
-use core::fmt::Write;
+use crate::{AtError};
 use defmt::Format;
+use embedded_io::Write;
 
 #[derive(Format)]
 /// Test if a pin is required.
@@ -10,8 +10,8 @@ pub struct PINRequired;
 impl AtRequest for PINRequired {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CPIN?\r\n").unwrap();
+    fn send<T: embedded_io::Write>(&self, writer: &mut T) {
+        writer.write("AT+CPIN?\r\n".as_bytes()).unwrap();
     }
 }
 
@@ -24,10 +24,10 @@ pub struct EnterPIN {
 impl AtRequest for EnterPIN {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
+    fn send<T: embedded_io::Write >(&self, writer: &mut T) {
         let pin = self.pin;
-        writer.write_str("AT+CPIN=").unwrap();
-        writer.write_full_blocking(&[pin]);
-        writer.write_str("\r\n").unwrap();
+        writer.write("AT+CPIN=".as_bytes()).unwrap();
+        writer.write(&[pin]).expect("failed writing pin");
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }

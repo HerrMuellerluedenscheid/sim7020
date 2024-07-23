@@ -1,7 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::ModemWriter;
-use core::fmt::Write;
 use defmt::Format;
+use embedded_io::Write;
 
 #[derive(Format)]
 pub struct AtI;
@@ -13,7 +12,7 @@ pub struct ProductInformation {
 impl AtRequest for AtI {
     type Response = ProductInformation;
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("ATI\r\n").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("ATI\r\n".as_bytes()).unwrap();
     }
 }

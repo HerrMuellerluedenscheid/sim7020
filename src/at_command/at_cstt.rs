@@ -1,6 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{AtError, ModemWriter};
-use core::fmt::Write;
+use crate::{AtError};
+use embedded_io::Write;
 use defmt::Format;
 
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
@@ -12,8 +12,8 @@ pub struct GetAPNUserPassword {}
 impl AtRequest for GetAPNUserPassword {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CSTT?").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("AT+CSTT?".as_bytes()).unwrap();
     }
 }
 
@@ -46,19 +46,19 @@ impl SetAPNUserPassword {
 impl AtRequest for SetAPNUserPassword {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CSTT=").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("AT+CSTT=".as_bytes()).unwrap();
         if Option::is_some(&self.apn) {
-            writer.write_full_blocking(&self.apn.unwrap());
+            writer.write(&self.apn.unwrap()).expect("TODO: panic message");
         }
-        writer.write_char(',').unwrap();
+        writer.write(",".as_bytes()).unwrap();
         if Option::is_some(&self.user) {
-            writer.write_full_blocking(&self.user.unwrap());
+            writer.write(&self.user.unwrap()).expect("TODO: panic message");
         }
-        writer.write_char(',').unwrap();
+        writer.write(",".as_bytes()).unwrap();
         if Option::is_some(&self.password) {
-            writer.write_full_blocking(&self.password.unwrap());
+            writer.write(&self.password.unwrap()).expect("TODO: panic message");
         }
-        writer.write_str("\r\n").unwrap();
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }

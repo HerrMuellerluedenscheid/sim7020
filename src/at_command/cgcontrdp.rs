@@ -1,6 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{AtError, ModemWriter};
-use core::fmt::Write;
+use crate::{AtError};
+use embedded_io::Write;
 use defmt::Format;
 
 #[derive(Format)]
@@ -9,7 +9,7 @@ pub struct PDPContextReadDynamicsParameters;
 impl AtRequest for PDPContextReadDynamicsParameters {
     type Response = Result<(), AtError>;
 
-    fn send(&self, writer: &mut ModemWriter) {
-        writer.write_str("AT+CGCONTRDP\r\n").unwrap();
+    fn send<T: Write>(&self, writer: &mut T) {
+        writer.write("AT+CGCONTRDP\r\n".as_bytes()).unwrap();
     }
 }

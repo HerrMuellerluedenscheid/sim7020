@@ -1,4 +1,4 @@
-workspace = { members = ["examples/pico"] }
+#workspace = { members = ["examples/pico"] }
 
 [lib]
 
@@ -18,9 +18,8 @@ defmt = "0.3"
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 
-# We're using a Pico by default on this template
-rp-pico = "0.9"
 hex = { version = "0.4.3", default-features = false }
+embedded-io = "0.6.1"
 
 # If you're not going to use a Board Support Package you'll need these:
 # rp2040-hal = { version="0.10", features=["rt", "critical-section-impl"] }

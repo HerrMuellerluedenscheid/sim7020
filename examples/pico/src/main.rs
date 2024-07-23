@@ -106,7 +106,10 @@ fn main() -> ! {
     // GP14 -> PWR: pull down to shutdown
     // GP17 -> DTR: wake up module
 
-    let mut modem = Modem { writer, reader };
+    let mut modem = Modem {
+        writer: &mut writer,
+        reader: &mut reader,
+    };
 
     modem
         .send_and_wait_reply(at_command::at_cpin::PINRequired {})
