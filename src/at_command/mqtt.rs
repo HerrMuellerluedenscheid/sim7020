@@ -1,9 +1,9 @@
 use crate::at_command::{AtRequest, AtResponse};
 use crate::utils::split_u16_to_u8;
-use crate::{AtError};
-use embedded_io::Write;
+use crate::AtError;
 use defmt::export::write;
 use defmt::{error, info, Format};
+use embedded_io::Write;
 use hex;
 
 #[derive(Format)]
@@ -21,9 +21,6 @@ impl AtRequest for NewMQTTConnection<'_> {
 
     fn send<T: Write>(&self, writer: &mut T) {
         // TODO: move into new
-        if self.port > 65535 {
-            error!("port is out of range")
-        }
         if self.timeout_ms > 60000 {
             error!("timeout is out of range")
         }
@@ -35,7 +32,9 @@ impl AtRequest for NewMQTTConnection<'_> {
         let timeout = split_u16_to_u8(self.timeout_ms);
         let buffer_size = split_u16_to_u8(self.buffer_size);
         writer.write("AT+CMQNEW=".as_bytes()).unwrap();
-        writer.write("88.198.226.54,1883,5000,600".as_bytes()).unwrap();
+        writer
+            .write("88.198.226.54,1883,5000,600".as_bytes())
+            .unwrap();
         // writer.write(self.server).unwrap();
         // writer.write_char(',').unwrap();
         // writer.write_full_blocking(&port);
@@ -111,7 +110,9 @@ impl AtRequest for MQTTPublish {
         let mut buffer: [u8; 4] = [0; 4];
         hex::encode_to_slice(b"hi", &mut buffer).unwrap();
 
-        writer.write("AT+CMQPUB=0,\"test\",1,0,0,4,\"".as_bytes()).unwrap();
+        writer
+            .write("AT+CMQPUB=0,\"test\",1,0,0,4,\"".as_bytes())
+            .unwrap();
         writer.write(&buffer).unwrap();
         writer.write("\"\r\n".as_bytes()).unwrap();
     }

@@ -1,7 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{AtError};
-use embedded_io::Write;
+use crate::AtError;
 use defmt::Format;
+use embedded_io::Write;
 
 #[derive(Format)]
 /// TA returns a list of quadruplets, each representing an operator present in

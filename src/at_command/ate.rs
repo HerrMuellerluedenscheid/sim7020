@@ -1,7 +1,7 @@
 use crate::at_command::AtRequest;
-use crate::{AtError};
-use embedded_io::Write;
+use crate::AtError;
 use defmt::Format;
+use embedded_io::Write;
 
 #[derive(Format, Clone, Copy)]
 #[repr(u8)]

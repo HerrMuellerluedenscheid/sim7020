@@ -1,5 +1,5 @@
 use crate::at_command::AtRequest;
-use crate::{AtError};
+use crate::AtError;
 use defmt::Format;
 use embedded_io::Write;
 

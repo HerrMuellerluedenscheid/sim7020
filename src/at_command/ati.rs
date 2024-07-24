@@ -1,4 +1,4 @@
-use crate::at_command::{AtRequest};
+use crate::at_command::AtRequest;
 use defmt::Format;
 use embedded_io::Write;
 

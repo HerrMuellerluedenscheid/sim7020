@@ -24,7 +24,7 @@ pub struct EnterPIN {
 impl AtRequest for EnterPIN {
     type Response = Result<(), AtError>;
 
-    fn send<T: embedded_io::Write >(&self, writer: &mut T) {
+    fn send<T: embedded_io::Write>(&self, writer: &mut T) {
         let pin = self.pin;
         writer.write("AT+CPIN=".as_bytes()).unwrap();
         writer.write(&[pin]).expect("failed writing pin");

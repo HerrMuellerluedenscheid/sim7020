@@ -1,23 +1,14 @@
 #![no_std]
 #![no_main]
 
-use defmt_rtt as _;
 pub mod at_command;
 
 mod utils;
 
 use at_command::AtRequest;
-use core::fmt::Debug;
 use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_io::{ErrorType, Read, Write};
-
-use panic_probe as _;
-
-// Provide an alias for our BSP so we can switch targets quickly.
-// Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
-// use rp_pico as bsp;
-// use sparkfun_pro_micro_rp2040 as bsp;
 
 use crate::at_command::at;
 
@@ -25,7 +16,6 @@ const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
 const CR: u8 = 13;
 const LF: u8 = 10;
-
 
 pub struct Modem<'a, T: Write, U: Read> {
     pub writer: &'a mut T,
@@ -38,7 +28,7 @@ pub enum AtError {
     ErrorReply,
 }
 
-impl <T: Write, U: Read> Modem<'_, T, U> {
+impl<T: Write, U: Read> Modem<'_, T, U> {
     pub fn send_and_wait_reply<V: AtRequest + Format>(
         &mut self,
         payload: V,
@@ -81,7 +71,7 @@ impl <T: Write, U: Read> Modem<'_, T, U> {
         loop {
             match self.reader.read(&mut read_buffer) {
                 Ok(num_bytes) => {
-                    for i in 0..num_bytes{
+                    for i in 0..num_bytes {
                         buffer[offset] = read_buffer[i];
                         match buffer[offset] {
                             LF => return Ok(buffer),
@@ -89,8 +79,7 @@ impl <T: Write, U: Read> Modem<'_, T, U> {
                         }
                         offset += 1;
                     }
-
-                },
+                }
 
                 Err(e) => {
                     error!("no data")

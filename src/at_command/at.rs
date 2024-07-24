@@ -1,6 +1,6 @@
 use crate::at_command::AtRequest;
-use crate::{AtError};
-use defmt::{Format, info};
+use crate::AtError;
+use defmt::{info, Format};
 
 #[derive(Format)]
 pub struct At;

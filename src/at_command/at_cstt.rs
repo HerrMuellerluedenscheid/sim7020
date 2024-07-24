@@ -1,7 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{AtError};
-use embedded_io::Write;
+use crate::AtError;
 use defmt::Format;
+use embedded_io::Write;
 
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
 
@@ -49,15 +49,21 @@ impl AtRequest for SetAPNUserPassword {
     fn send<T: Write>(&self, writer: &mut T) {
         writer.write("AT+CSTT=".as_bytes()).unwrap();
         if Option::is_some(&self.apn) {
-            writer.write(&self.apn.unwrap()).expect("TODO: panic message");
+            writer
+                .write(&self.apn.unwrap())
+                .expect("TODO: panic message");
         }
         writer.write(",".as_bytes()).unwrap();
         if Option::is_some(&self.user) {
-            writer.write(&self.user.unwrap()).expect("TODO: panic message");
+            writer
+                .write(&self.user.unwrap())
+                .expect("TODO: panic message");
         }
         writer.write(",".as_bytes()).unwrap();
         if Option::is_some(&self.password) {
-            writer.write(&self.password.unwrap()).expect("TODO: panic message");
+            writer
+                .write(&self.password.unwrap())
+                .expect("TODO: panic message");
         }
         writer.write("\r\n".as_bytes()).unwrap();
     }
