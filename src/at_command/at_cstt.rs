@@ -1,4 +1,4 @@
-use crate::at_command::{AtRequest, AtResponse};
+use crate::at_command::{AtRequest};
 use crate::AtError;
 use defmt::Format;
 use embedded_io::Write;

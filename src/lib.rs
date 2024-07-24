@@ -3,8 +3,6 @@
 
 pub mod at_command;
 
-mod utils;
-
 use at_command::AtRequest;
 use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
@@ -12,9 +10,7 @@ use embedded_io::{ErrorType, Read, Write};
 
 use crate::at_command::at;
 
-const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
-const CR: u8 = 13;
 const LF: u8 = 10;
 
 pub struct Modem<'a, T: Write, U: Read> {
@@ -40,7 +36,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         // Assuming there will always max 1 line containing a response followed by one 'OK' line
         for iline in 0..10_usize {
             let response = self.read_line_from_modem()?;
-            debug!("line {}: {=[u8]:a}", iline, response);
+            // debug!("line {}: {=[u8]:a}", iline, response);
             if response.starts_with(b"\x00") {
                 // debug!("skipping empty line: {}", response);
                 continue;

@@ -1,6 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::utils::split_u16_to_u8;
 use crate::AtError;
+use at_commands::builder::CommandBuilder;
 use defmt::export::write;
 use defmt::{error, info, Format};
 use embedded_io::Write;
@@ -28,22 +28,17 @@ impl AtRequest for NewMQTTConnection<'_> {
             error!("buffer_size is out of range")
         }
 
-        let port = split_u16_to_u8(self.port);
-        let timeout = split_u16_to_u8(self.timeout_ms);
-        let buffer_size = split_u16_to_u8(self.buffer_size);
-        writer.write("AT+CMQNEW=".as_bytes()).unwrap();
-        writer
-            .write("88.198.226.54,1883,5000,600".as_bytes())
+        let mut buffer = [0; 128];
+        let result = CommandBuilder::create_set(&mut buffer, true)
+            .named("+CMQNEW")
+            .with_string_parameter(self.server)
+            .with_int_parameter(self.port)
+            .with_int_parameter(self.timeout_ms)
+            .with_int_parameter(self.buffer_size)
+            // .with_optional_int_parameter(self.context_id)
+            .finish()
             .unwrap();
-        // writer.write(self.server).unwrap();
-        // writer.write_char(',').unwrap();
-        // writer.write_full_blocking(&port);
-        // writer.write_char(',').unwrap();
-        // writer.write_full_blocking(&timeout);
-        // writer.write_char(',').unwrap();
-        // writer.write_full_blocking(&buffer_size);
-        // // hier muss noch die cid hin falls nicht none
-        writer.write("\r\n".as_bytes()).unwrap();
+        writer.write(&buffer).unwrap();
     }
 }
 
@@ -60,72 +55,108 @@ impl AtRequest for CloseMQTTConnection {
 }
 
 #[derive(Format)]
-pub struct MQTTConnect {}
+#[repr(u8)]
+pub enum MQTTVersion {
+    MQTT31,
+    MQTT311,
+}
 
-impl AtRequest for MQTTConnect {
+pub struct WillOptions <'a>{
+    pub topic: &'a str,
+    pub QoS: u8,
+    pub retained: bool
+}
+
+#[derive(Format)]
+pub struct MQTTConnect <'a> {
+    pub mqtt_id: u8,
+    pub version: MQTTVersion,
+    pub client_id: &'a str,
+    pub keepalive_interval: u16,  // 0 - 64800
+    pub clean_session: bool,
+    pub will_flag: bool,
+    // pub will_options: Option<WillOptions>,
+    pub username: &'a str,
+    pub password: &'a str
+}
+
+impl AtRequest for MQTTConnect<'_> {
     type Response = ();
 
     fn send<T: Write>(&self, writer: &mut T) {
-        //
-        writer
-            .write("AT+CMQCON=0,4,234343493,120,0,0,marius,Haufenhistory\r\n".as_bytes())
+
+        let version: u8 = match self.version {
+            MQTTVersion::MQTT31 => {3}
+            MQTTVersion::MQTT311 => {4}
+        };
+        let mut buffer = [0; 128];
+        let command = CommandBuilder::create_set(&mut buffer, true)
+            .named("+CMQCON")
+            .with_int_parameter(self.mqtt_id)
+            .with_int_parameter(version)
+            .with_string_parameter(&self.client_id)
+            .with_int_parameter(self.keepalive_interval)
+            .with_int_parameter(self.clean_session as u8)
+            .with_int_parameter(self.will_flag as u8)
+            .with_string_parameter(&self.username)
+            .with_string_parameter(&self.password)
+            .finish()
             .unwrap();
+        writer.write(command).unwrap();
     }
 }
 
 #[derive(Format)]
-pub struct MQTTPublish {
-    // mqtt_id: u8,  // AT+CMQNEW response
-    // topic: str  // length max 128b
-    // qos:  // 0 | 1 | 2
-    // retained: u8  // 0 | 1
-    // dup: u8  // 0 | 1
-    // message_len: u8  | 2 - 1000
-    // message: str as hex
-}
-
-fn byte_to_hex(byte: u8) -> (char, char) {
-    let hex_chars = b"0123456789abcdef";
-    (
-        hex_chars[(byte >> 4) as usize] as char,
-        hex_chars[(byte & 0x0F) as usize] as char,
-    )
+pub enum MQTTDataFormat{
+    Bytes,
+    Hex
 }
 
 #[derive(Format)]
-pub struct MQTTRawData {}
+pub struct MQTTRawData {
+    pub data_format: MQTTDataFormat
+}
 
 impl AtRequest for MQTTRawData {
     type Response = ();
 
     fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+CREVHEX=0\r\n".as_bytes()).unwrap();
-    }
-}
-
-impl AtRequest for MQTTPublish {
-    type Response = ();
-
-    fn send<T: Write>(&self, writer: &mut T) {
-        let mut buffer: [u8; 4] = [0; 4];
-        hex::encode_to_slice(b"hi", &mut buffer).unwrap();
-
-        writer
-            .write("AT+CMQPUB=0,\"test\",1,0,0,4,\"".as_bytes())
-            .unwrap();
-        writer.write(&buffer).unwrap();
-        writer.write("\"\r\n".as_bytes()).unwrap();
+        let format= match self.data_format {
+            MQTTDataFormat::Bytes => "0",
+            MQTTDataFormat::Hex => "1",
+        };
+        writer.write("AT+CREVHEX=".as_bytes()).unwrap();
+        writer.write(format.as_bytes()).unwrap();
+        writer.write("\r\n".as_bytes()).unwrap();
     }
 }
 
 #[derive(Format)]
-pub struct MQTTSubscribe {}
+pub struct MQTTPublish <'a> {
+    pub mqtt_id: u8,  // AT+CMQNEW response
+    pub topic: &'a str,  // length max 128b
+    pub qos: u8, // 0 | 1 | 2
+    pub retained: bool,  // 0 | 1
+    pub dup: bool,  // 0 | 1
+    pub message: &'a str  // as hex
+}
 
-impl AtRequest for MQTTSubscribe {
+impl AtRequest for MQTTPublish<'_> {
     type Response = ();
 
     fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+CMQSUB=0,\"test\",1".as_bytes()).unwrap();
-        writer.write("\r\n".as_bytes()).unwrap();
+        let mut buffer = [0; 128];
+        let command = CommandBuilder::create_set(&mut buffer, true)
+            .named("+CMQPUB")
+            .with_int_parameter(self.mqtt_id)
+            .with_string_parameter(self.topic)
+            .with_int_parameter(self.qos)
+            .with_int_parameter(self.retained as u8)
+            .with_int_parameter(self.dup as u8)
+            .with_int_parameter(self.message.len() as i32)
+            .with_string_parameter(self.message.as_bytes())
+            .finish()
+            .unwrap();
+        writer.write(command).unwrap();
     }
 }

@@ -40,8 +40,6 @@ use rp_pico::pac::UART0;
 
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
-const CR: u8 = 13;
-const LF: u8 = 10;
 
 #[entry]
 fn main() -> ! {
@@ -136,28 +134,33 @@ fn main() -> ! {
         .send_and_wait_reply(at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
         .unwrap();
 
-    // // will error if already running
-    // modem
-    //     .send_and_wait_reply(at_command::ntp::StartNTPConnection {})
-    //     .unwrap();
+    modem
+        .send_and_wait_reply(at_command::ntp::StartNTPConnection {})
+        .or_else(|e| {
+            warn!("failed starting ntp connection. Connection already established?");
+            return Err(e);
+        });
 
     modem
         .send_and_wait_reply(at_command::ntp::NTPTime {})
         .unwrap();
     modem
         .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
-        .unwrap();
+        .or_else(|e| {
+            warn!("failed closing mqtt connection");
+            return Err(e);
+        });
 
     modem
-        .send_and_wait_reply(at_command::mqtt::MQTTRawData {})
+        .send_and_wait_reply(at_command::mqtt::MQTTRawData {
+            data_format: at_command::mqtt::MQTTDataFormat::Bytes,
+        })
         .unwrap();
 
-    // start a new mqtt connection
-    // will fail when already running. Check state in advance
     match modem.send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
         server: "88.198.226.54",
         port: 1883,
-        timeout_ms: 2000,
+        timeout_ms: 5000,
         buffer_size: 600,
         context_id: None,
     }) {
@@ -165,17 +168,30 @@ fn main() -> ! {
         Err(e) => warn!("failed connecting mqtt"),
     };
     delay.delay_ms(500);
-    modem
-        .send_and_wait_reply(at_command::mqtt::MQTTConnect {})
-        .unwrap();
-    delay.delay_ms(1000);
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::MQTTSubscribe {})
-    //     .unwrap();
-    // delay.delay_ms(2000);
 
     modem
-        .send_and_wait_reply(at_command::mqtt::MQTTPublish {})
+        .send_and_wait_reply(at_command::mqtt::MQTTConnect {
+            mqtt_id: 0,
+            version: at_command::mqtt::MQTTVersion::MQTT311,
+            client_id: "sdo92u34oij",
+            keepalive_interval: 120,
+            clean_session: false,
+            will_flag: false,
+            username: "marius",
+            password: "Haufenhistory",
+        })
+        .unwrap();
+    delay.delay_ms(1000);
+
+    modem
+        .send_and_wait_reply(at_command::mqtt::MQTTPublish {
+            mqtt_id: 0,                      // AT+CMQNEW response
+            topic: "test",                   // length max 128b
+            qos: 1,                          // 0 | 1 | 2
+            retained: false,                 // 0 | 1
+            dup: false,                      // 0 | 1
+            message: "hello world via mqtt", // as hex
+        })
         .unwrap();
     delay.delay_ms(2000);
     //
@@ -198,7 +214,6 @@ fn main() -> ! {
     //
     // // writer.write_full_blocking(b"ATE0\r\n");
     let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
-    let mut index = 0;
 
     info!("receive loop");
 
