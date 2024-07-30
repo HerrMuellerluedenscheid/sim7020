@@ -1,0 +1,24 @@
+[package]
+name = "pico-embassy"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+sim7020 = {path = "../../.", version = "0.1.2" }
+
+embassy-embedded-hal = { version = "0.1.0", features = ["defmt"] }
+embassy-executor = { version = "0.5.0", features = ["arch-cortex-m", "executor-thread",  "defmt", "integrated-timers"] }
+embassy-rp = { version = "0.1.0", features = ["defmt", "time-driver", "critical-section-impl"] }
+embassy-time = "0.3.1"
+cortex-m-rt = "0.7.0"
+defmt = "0.3"
+defmt-rtt = "0.4"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+[profile.release]
+debug = 2
+
+[profile.dev]
+lto = true
+opt-level = "z"
