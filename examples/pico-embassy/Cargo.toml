@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-sim7020 = {path = "../../.", version = "0.1.2" }
+sim7020 = {path = "../../.", features = ["nonblocking"]}
 
 embassy-embedded-hal = { version = "0.1.0", features = ["defmt"] }
 embassy-executor = { version = "0.5.0", features = ["arch-cortex-m", "executor-thread",  "defmt", "integrated-timers"] }

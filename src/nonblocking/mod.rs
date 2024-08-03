@@ -1,17 +1,8 @@
-#![no_std]
-#![no_main]
-
-pub mod at_command;
-#[cfg(feature = "nonblocking")]
-pub mod nonblocking;
-
-use at_command::AtRequest;
+use crate::at_command::AtRequest;
+use crate::BUFFER_SIZE;
 use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_io::{ErrorType, Read, Write};
-
-const BUFFER_SIZE: usize = 128;
-const LF: u8 = 10;
+use embedded_io_async::{ErrorType, Read, Write};
 
 pub struct Modem<'a, T: Write, U: Read> {
     pub writer: &'a mut T,
@@ -25,7 +16,7 @@ pub enum AtError {
 }
 
 impl<T: Write, U: Read> Modem<'_, T, U> {
-    pub fn send_and_wait_reply<V: AtRequest + Format>(
+    pub async fn send_and_wait_reply<V: AtRequest + Format>(
         &mut self,
         payload: V,
     ) -> Result<[u8; BUFFER_SIZE], AtError> {
@@ -33,16 +24,18 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
 
         let mut at_buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut at_buffer);
-        self.writer.write(data).unwrap();
-        self.read_response()
+
+        self.writer.write_all(data).await.unwrap();
+        info!("sent");
+        self.read_response().await
     }
 
-    fn read_response(&mut self) -> Result<[u8; 128], AtError> {
+    async fn read_response(&mut self) -> Result<[u8; 128], AtError> {
         let mut previous_line: [u8; BUFFER_SIZE] = [b'\0'; BUFFER_SIZE];
 
         // Assuming there will always max 1 line containing a response followed by one 'OK' line
-        for iline in 0..10_usize {
-            let response = self.read_line_from_modem()?;
+        for iline in 0..120_usize {
+            let response = self.read_line_from_modem().await?;
             // debug!("line {}: {=[u8]:a}", iline, response);
             if response.starts_with(b"\x00") {
                 // debug!("skipping empty line: {}", response);
@@ -67,12 +60,12 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         Err(AtError::TooManyReturnedLines)
     }
 
-    fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
+    async fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 10] = [0; 10];
         loop {
-            match self.reader.read(&mut read_buffer) {
+            match self.reader.read(&mut read_buffer).await {
                 Ok(num_bytes) => {
                     for i in 0..num_bytes {
                         buffer[offset] = read_buffer[i];
