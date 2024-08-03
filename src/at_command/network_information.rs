@@ -13,9 +13,10 @@ pub struct NetworkInformationAvailable;
 impl AtRequest for NetworkInformationAvailable {
     type Response = Result<(), AtError>;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+COPS")
-.finish()
+            .finish()
     }
 }
 
@@ -26,8 +27,9 @@ pub struct NetworkInformation;
 impl AtRequest for NetworkInformation {
     type Response = Result<(), AtError>;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_test(buffer, true)
             .named("+COPS")
-.finish()
+            .finish()
     }
 }

@@ -19,7 +19,8 @@ pub struct NewMQTTConnection<'a> {
 impl AtRequest for NewMQTTConnection<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        // TODO: move into new
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        // TODO: move into new
         if self.timeout_ms > 60000 {
             error!("timeout is out of range")
         }
@@ -34,7 +35,7 @@ impl AtRequest for NewMQTTConnection<'_> {
             .with_int_parameter(self.timeout_ms)
             .with_int_parameter(self.buffer_size)
             // .with_optional_int_parameter(self.context_id)
-.finish()
+            .finish()
     }
 }
 
@@ -44,11 +45,12 @@ pub struct CloseMQTTConnection {}
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        // todo fix hard coded client id
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        // todo fix hard coded client id
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
             .with_int_parameter(0)
-.finish()
+            .finish()
     }
 }
 
@@ -59,32 +61,32 @@ pub enum MQTTVersion {
     MQTT311,
 }
 
-pub struct WillOptions <'a>{
+pub struct WillOptions<'a> {
     pub topic: &'a str,
     pub QoS: u8,
-    pub retained: bool
+    pub retained: bool,
 }
 
 #[derive(Format)]
-pub struct MQTTConnect <'a> {
+pub struct MQTTConnect<'a> {
     pub mqtt_id: u8,
     pub version: MQTTVersion,
     pub client_id: &'a str,
-    pub keepalive_interval: u16,  // 0 - 64800
+    pub keepalive_interval: u16, // 0 - 64800
     pub clean_session: bool,
     pub will_flag: bool,
     // pub will_options: Option<WillOptions>,
     pub username: &'a str,
-    pub password: &'a str
+    pub password: &'a str,
 }
 
 impl AtRequest for MQTTConnect<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let version: u8 = match self.version {
-            MQTTVersion::MQTT31 => {3}
-            MQTTVersion::MQTT311 => {4}
+            MQTTVersion::MQTT31 => 3,
+            MQTTVersion::MQTT311 => 4,
         };
         CommandBuilder::create_set(buffer, true)
             .named("+CMQCON")
@@ -96,25 +98,26 @@ impl AtRequest for MQTTConnect<'_> {
             .with_int_parameter(self.will_flag as u8)
             .with_string_parameter(&self.username)
             .with_string_parameter(&self.password)
-.finish()
+            .finish()
     }
 }
 
 #[derive(Format)]
-pub enum MQTTDataFormat{
+pub enum MQTTDataFormat {
     Bytes,
-    Hex
+    Hex,
 }
 
 #[derive(Format)]
 pub struct MQTTRawData {
-    pub data_format: MQTTDataFormat
+    pub data_format: MQTTDataFormat,
 }
 
 impl AtRequest for MQTTRawData {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        let format= match self.data_format {
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        let format = match self.data_format {
             MQTTDataFormat::Bytes => "0",
             MQTTDataFormat::Hex => "1",
         };
@@ -122,24 +125,25 @@ impl AtRequest for MQTTRawData {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CREVHEX")
             .with_string_parameter(format)
-.finish()
+            .finish()
     }
 }
 
 #[derive(Format)]
-pub struct MQTTPublish <'a> {
-    pub mqtt_id: u8,  // AT+CMQNEW response
-    pub topic: &'a str,  // length max 128b
-    pub qos: u8, // 0 | 1 | 2
-    pub retained: bool,  // 0 | 1
-    pub dup: bool,  // 0 | 1
-    pub message: &'a str  // as hex
+pub struct MQTTPublish<'a> {
+    pub mqtt_id: u8,      // AT+CMQNEW response
+    pub topic: &'a str,   // length max 128b
+    pub qos: u8,          // 0 | 1 | 2
+    pub retained: bool,   // 0 | 1
+    pub dup: bool,        // 0 | 1
+    pub message: &'a str, // as hex
 }
 
 impl AtRequest for MQTTPublish<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        CommandBuilder::create_set(buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        CommandBuilder::create_set(buffer, true)
             .named("+CMQPUB")
             .with_int_parameter(self.mqtt_id)
             .with_string_parameter(self.topic)
@@ -148,6 +152,6 @@ impl AtRequest for MQTTPublish<'_> {
             .with_int_parameter(self.dup as u8)
             .with_int_parameter(self.message.len() as i32)
             .with_string_parameter(self.message.as_bytes())
-.finish()
+            .finish()
     }
 }

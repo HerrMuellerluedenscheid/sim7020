@@ -1,16 +1,16 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::{AtError, BUFFER_SIZE};
 use defmt::Format;
-use embedded_io::Write;
 
 #[derive(Format)]
-pub struct AtCsq;
+pub struct SignalQualityReport;
 
-impl AtRequest for AtCsq {
+impl AtRequest for SignalQualityReport {
     type Response = Result<(), AtError>;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_query(buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_execute(buffer, true)
             .named("+CSQ")
-.finish()
+            .finish()
     }
 }

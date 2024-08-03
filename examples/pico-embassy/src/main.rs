@@ -71,7 +71,7 @@ async fn main(spawner: Spawner) -> ! {
 
     // modem.send_and_wait_reply(at_command::at::At {}).unwrap();
     modem
-        .send_and_wait_reply(at_command::at_cgmm::AtCgmm {})
+        .send_and_wait_reply(at_command::model_identification::AtCgmm {})
         .unwrap();
 
     // this blocks completely
@@ -86,7 +86,9 @@ async fn main(spawner: Spawner) -> ! {
         .unwrap();
 
     modem
-        .send_and_wait_reply(at_command::ntp::StartNTPConnection {})
+        .send_and_wait_reply(at_command::ntp::StartNTPConnection {
+            ip_addr: "202.112.29.82"
+        })
         .or_else(|e| {
             warn!("failed starting ntp connection. Connection already established?");
             return Err(e);
@@ -181,7 +183,7 @@ async fn main(spawner: Spawner) -> ! {
             .send_and_wait_reply(at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
         modem
-            .send_and_wait_reply(at_command::at_csq::AtCsq {})
+            .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
             .unwrap();
         Timer::after_millis(3000).await;
         // match modem.reader.read() {

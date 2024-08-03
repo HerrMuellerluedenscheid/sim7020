@@ -8,7 +8,6 @@ use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_io::{ErrorType, Read, Write};
 
-
 const BUFFER_SIZE: usize = 128;
 const LF: u8 = 10;
 
@@ -65,7 +64,6 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         info!("returning response data: {=[u8]:a}", previous_line);
         Err(AtError::TooManyReturnedLines)
     }
-
 
     fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];

@@ -118,12 +118,11 @@ fn main() -> ! {
         })
         .unwrap();
 
-    // modem.send_and_wait_reply(at_command::at::At {}).unwrap();
     modem
-        .send_and_wait_reply(at_command::at_cgmm::AtCgmm {})
+        .send_and_wait_reply(at_command::model_identification::ModelIdentification {})
         .unwrap();
 
-    // this blocks completely
+    // todo: this blocks completely
     // modem.send_and_wait_reply(at_command::network_information::NetworkInformationAvailable{}).unwrap();
 
     modem
@@ -135,7 +134,9 @@ fn main() -> ! {
         .unwrap();
 
     modem
-        .send_and_wait_reply(at_command::ntp::StartNTPConnection {})
+        .send_and_wait_reply(at_command::ntp::StartNTPConnection {
+            ip_addr: "202.112.29.82",
+        })
         .or_else(|e| {
             warn!("failed starting ntp connection. Connection already established?");
             return Err(e);
@@ -222,7 +223,7 @@ fn main() -> ! {
             .send_and_wait_reply(at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
         modem
-            .send_and_wait_reply(at_command::at_csq::AtCsq {})
+            .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
             .unwrap();
         delay.delay_ms(5000);
         // match modem.reader.read() {

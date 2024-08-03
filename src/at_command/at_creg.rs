@@ -9,7 +9,8 @@ pub struct AtCreg;
 impl AtRequest for AtCreg {
     type Response = Result<(), AtError>;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_test(buffer, true)
             .named("+CREG")
             .finish()
     }
