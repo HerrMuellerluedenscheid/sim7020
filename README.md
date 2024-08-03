@@ -1,8 +1,8 @@
-# SIM7020 Driver
+# SIM7020 Driver for NB-IoT Communication
 
 Based on the [rp2040-project-template](https://github.com/rp-rs/rp2040-project-template).
 
-This driver currently supports only a basic subset of AT commands. It's enough to get an NTP time stamp and send data via mqtt:
+This driver currently supports only a subset of the available AT commands of the [SIM7020 modem](https://www.waveshare.com/pico-sim7020e-nb-iot.htm). It's enough to get an NTP time stamp and send data via mqtt:
 
 ```rust
 
