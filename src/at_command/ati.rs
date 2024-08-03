@@ -1,6 +1,7 @@
-use crate::at_command::AtRequest;
+use crate::at_command::{AtRequest, BufferType};
 use defmt::Format;
 use embedded_io::Write;
+use crate::BUFFER_SIZE;
 
 #[derive(Format)]
 pub struct AtI;
@@ -10,7 +11,8 @@ pub struct ProductInformation {}
 impl AtRequest for AtI {
     type Response = ProductInformation;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("ATI\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("I")
+            .finish()
     }
 }

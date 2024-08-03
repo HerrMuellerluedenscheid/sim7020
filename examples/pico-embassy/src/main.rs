@@ -15,16 +15,13 @@ use embassy_rp::{bind_interrupts, gpio};
 use embassy_time::Timer;
 use gpio::{Level, Output};
 
-
 use sim7020::at_command;
 use sim7020::Modem;
-
 
 use embassy_rp::adc::Adc;
 use embassy_rp::gpio::{Input, Pull};
 use embassy_rp::peripherals::UART0;
 use embassy_rp::uart::{BufferedInterruptHandler, BufferedUart};
-
 
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
@@ -33,10 +30,8 @@ bind_interrupts!(struct Irqs {
     UART0_IRQ => BufferedInterruptHandler<UART0>;
 });
 
-
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
-
     info!("Program start");
     let p = embassy_rp::init(Default::default());
     let mut led = Output::new(p.PIN_25, Level::Low);
@@ -47,7 +42,15 @@ async fn main(spawner: Spawner) -> ! {
 
     let nbiot_rx = p.PIN_1;
     let nbiot_tx = p.PIN_0;
-    let uart = BufferedUart::new(p.UART0, Irqs, nbiot_tx, nbiot_rx, &mut [], &mut [], Default::default());
+    let uart = BufferedUart::new(
+        p.UART0,
+        Irqs,
+        nbiot_tx,
+        nbiot_rx,
+        &mut [],
+        &mut [],
+        Default::default(),
+    );
 
     let (mut reader, mut writer) = uart.split();
 
@@ -56,16 +59,14 @@ async fn main(spawner: Spawner) -> ! {
         writer: &mut writer,
         reader: &mut reader,
     };
-    modem.send_and_wait_reply_async(at_command::at_cpin::PINRequired {}).await;
+    modem.send_and_wait_reply(at_command::at_cpin::PINRequired {});
     modem
-        .send_and_wait_reply_async(at_command::at_cpin::PINRequired {})
-        .await
+        .send_and_wait_reply(at_command::at_cpin::PINRequired {})
         .expect("TODO: panic message");
     modem
-        .send_and_wait_reply_async(at_command::ate::AtEcho {
+        .send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
-        .await
         .unwrap();
 
     // modem.send_and_wait_reply(at_command::at::At {}).unwrap();
@@ -168,7 +169,6 @@ async fn main(spawner: Spawner) -> ! {
     info!("receive loop");
 
     loop {
-
         info!("led on!");
         led.set_high();
         Timer::after_secs(1).await;
@@ -204,4 +204,3 @@ async fn main(spawner: Spawner) -> ! {
 }
 
 // End of file
-

@@ -1,5 +1,5 @@
-use crate::at_command::AtRequest;
-use crate::AtError;
+use crate::at_command::{AtRequest, BufferType};
+use crate::{AtError, BUFFER_SIZE};
 use defmt::Format;
 use embedded_io::Write;
 
@@ -9,7 +9,8 @@ pub struct AtCsq;
 impl AtRequest for AtCsq {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+CSQ\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CSQ")
+.finish()
     }
 }

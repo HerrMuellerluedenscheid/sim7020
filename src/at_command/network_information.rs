@@ -1,5 +1,5 @@
-use crate::at_command::AtRequest;
-use crate::AtError;
+use crate::at_command::{AtRequest, BufferType};
+use crate::{AtError, BUFFER_SIZE};
 use defmt::Format;
 use embedded_io::Write;
 
@@ -13,8 +13,9 @@ pub struct NetworkInformationAvailable;
 impl AtRequest for NetworkInformationAvailable {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+COPS=?\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+            .named("+COPS")
+.finish()
     }
 }
 
@@ -25,7 +26,8 @@ pub struct NetworkInformation;
 impl AtRequest for NetworkInformation {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+COPS?\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+            .named("+COPS")
+.finish()
     }
 }

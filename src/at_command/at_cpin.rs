@@ -1,5 +1,5 @@
-use crate::at_command::AtRequest;
-use crate::AtError;
+use crate::at_command::{AtRequest, BufferType};
+use crate::{AtError};
 use defmt::Format;
 use embedded_io::Write;
 
@@ -10,8 +10,9 @@ pub struct PINRequired;
 impl AtRequest for PINRequired {
     type Response = Result<(), AtError>;
 
-    fn send<T: embedded_io::Write>(&self, writer: &mut T) {
-        writer.write("AT+CPIN?\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_test(buffer, true)
+            .named("+CPIN")
+.finish()
     }
 }
 
@@ -24,10 +25,9 @@ pub struct EnterPIN {
 impl AtRequest for EnterPIN {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        let pin = self.pin;
-        writer.write("AT+CPIN=".as_bytes()).unwrap();
-        writer.write(&pin.to_be_bytes()).expect("failed writing pin");
-        writer.write("\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CPIN")
+            .with_int_parameter(self.pin)
+            .finish()
     }
 }

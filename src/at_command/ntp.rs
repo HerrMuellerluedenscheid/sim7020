@@ -1,5 +1,5 @@
-use crate::at_command::AtRequest;
-use crate::AtError;
+use crate::at_command::{AtRequest, BufferType};
+use crate::{AtError, BUFFER_SIZE};
 use defmt::Format;
 use embedded_io::Write;
 
@@ -9,10 +9,11 @@ pub struct StartNTPConnection;
 impl AtRequest for StartNTPConnection {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer
-            .write("AT+CSNTPSTART=202.112.29.82\r\n".as_bytes())
-            .unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        // todo fix hard coded ip
+        at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CSNTPSTART")
+            .with_string_parameter("202.112.29.82")
+.finish()
     }
 }
 
@@ -22,8 +23,9 @@ pub struct StopNTPConnection;
 impl AtRequest for StopNTPConnection {
     type Response = Result<(), AtError>;
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+CSNTPSTOP\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CSNTPSTOP")
+.finish()
     }
 }
 
@@ -32,7 +34,7 @@ pub struct NTPTime {}
 
 impl AtRequest for NTPTime {
     type Response = Result<(), AtError>;
-    fn send<T: Write>(&self, writer: &mut T) {
-        writer.write("AT+CCLK?\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CCLK").finish()
     }
 }

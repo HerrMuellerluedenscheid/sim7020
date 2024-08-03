@@ -1,5 +1,5 @@
-use crate::at_command::{AtRequest, AtResponse};
-use crate::AtError;
+use crate::at_command::{AtRequest, BufferType};
+use crate::{AtError, BUFFER_SIZE};
 use at_commands::builder::CommandBuilder;
 use defmt::export::write;
 use defmt::{error, info, Format};
@@ -19,8 +19,7 @@ pub struct NewMQTTConnection<'a> {
 impl AtRequest for NewMQTTConnection<'_> {
     type Response = ();
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        // TODO: move into new
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        // TODO: move into new
         if self.timeout_ms > 60000 {
             error!("timeout is out of range")
         }
@@ -28,17 +27,14 @@ impl AtRequest for NewMQTTConnection<'_> {
             error!("buffer_size is out of range")
         }
 
-        let mut buffer = [0; 128];
-        let result = CommandBuilder::create_set(&mut buffer, true)
+        CommandBuilder::create_set(buffer, true)
             .named("+CMQNEW")
             .with_string_parameter(self.server)
             .with_int_parameter(self.port)
             .with_int_parameter(self.timeout_ms)
             .with_int_parameter(self.buffer_size)
             // .with_optional_int_parameter(self.context_id)
-            .finish()
-            .unwrap();
-        writer.write(&buffer).unwrap();
+.finish()
     }
 }
 
@@ -48,9 +44,11 @@ pub struct CloseMQTTConnection {}
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        // todo fix hard coded client id
-        writer.write("AT+CMQDISCON=0\r\n".as_bytes()).unwrap();
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        // todo fix hard coded client id
+        at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CMQDISCON")
+            .with_int_parameter(0)
+.finish()
     }
 }
 
@@ -83,14 +81,12 @@ pub struct MQTTConnect <'a> {
 impl AtRequest for MQTTConnect<'_> {
     type Response = ();
 
-    fn send<T: Write>(&self, writer: &mut T) {
-
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {
         let version: u8 = match self.version {
             MQTTVersion::MQTT31 => {3}
             MQTTVersion::MQTT311 => {4}
         };
-        let mut buffer = [0; 128];
-        let command = CommandBuilder::create_set(&mut buffer, true)
+        CommandBuilder::create_set(buffer, true)
             .named("+CMQCON")
             .with_int_parameter(self.mqtt_id)
             .with_int_parameter(version)
@@ -100,9 +96,7 @@ impl AtRequest for MQTTConnect<'_> {
             .with_int_parameter(self.will_flag as u8)
             .with_string_parameter(&self.username)
             .with_string_parameter(&self.password)
-            .finish()
-            .unwrap();
-        writer.write(command).unwrap();
+.finish()
     }
 }
 
@@ -120,14 +114,15 @@ pub struct MQTTRawData {
 impl AtRequest for MQTTRawData {
     type Response = ();
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        let format= match self.data_format {
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        let format= match self.data_format {
             MQTTDataFormat::Bytes => "0",
             MQTTDataFormat::Hex => "1",
         };
-        writer.write("AT+CREVHEX=".as_bytes()).unwrap();
-        writer.write(format.as_bytes()).unwrap();
-        writer.write("\r\n".as_bytes()).unwrap();
+
+        at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CREVHEX")
+            .with_string_parameter(format)
+.finish()
     }
 }
 
@@ -144,9 +139,7 @@ pub struct MQTTPublish <'a> {
 impl AtRequest for MQTTPublish<'_> {
     type Response = ();
 
-    fn send<T: Write>(&self, writer: &mut T) {
-        let mut buffer = [0; 128];
-        let command = CommandBuilder::create_set(&mut buffer, true)
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a[u8], usize> {        CommandBuilder::create_set(buffer, true)
             .named("+CMQPUB")
             .with_int_parameter(self.mqtt_id)
             .with_string_parameter(self.topic)
@@ -155,8 +148,6 @@ impl AtRequest for MQTTPublish<'_> {
             .with_int_parameter(self.dup as u8)
             .with_int_parameter(self.message.len() as i32)
             .with_string_parameter(self.message.as_bytes())
-            .finish()
-            .unwrap();
-        writer.write(command).unwrap();
+.finish()
     }
 }

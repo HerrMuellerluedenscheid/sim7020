@@ -8,7 +8,6 @@ use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_io::{ErrorType, Read, Write};
 
-use crate::at_command::at;
 
 const BUFFER_SIZE: usize = 128;
 const LF: u8 = 10;
@@ -30,7 +29,14 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         payload: V,
     ) -> Result<[u8; BUFFER_SIZE], AtError> {
         info!("========>    sending data: {:?}", payload);
-        payload.send(&mut self.writer);
+
+        let mut at_buffer = [0; BUFFER_SIZE];
+        let data = payload.get_command_no_error(&mut at_buffer);
+        self.writer.write(data).unwrap();
+        self.read_response()
+    }
+
+    fn read_response(&mut self) -> Result<[u8; 128], AtError> {
         let mut previous_line: [u8; BUFFER_SIZE] = [b'\0'; BUFFER_SIZE];
 
         // Assuming there will always max 1 line containing a response followed by one 'OK' line
@@ -59,6 +65,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         info!("returning response data: {=[u8]:a}", previous_line);
         Err(AtError::TooManyReturnedLines)
     }
+
 
     fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
