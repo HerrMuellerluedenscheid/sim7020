@@ -43,7 +43,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         // Assuming there will always max 1 line containing a response followed by one 'OK' line
         for iline in 0..10_usize {
             let response = self.read_line_from_modem()?;
-            // debug!("line {}: {=[u8]:a}", iline, response);
+            debug!("line {}: {=[u8]:a}", iline, response);
             if response.starts_with(b"\x00") {
                 // debug!("skipping empty line: {}", response);
                 continue;
@@ -54,6 +54,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
             }
             if response.starts_with(b"OK") {
                 // debug!("found OK");
+                info!("returning response data: {=[u8]:a}", previous_line);
                 return Ok(previous_line);
             }
             if response.starts_with(b"ERROR") {
@@ -63,7 +64,6 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
             info!("response data: {=[u8]:a}", response);
             previous_line = response;
         }
-        info!("returning response data: {=[u8]:a}", previous_line);
         Err(AtError::TooManyReturnedLines)
     }
 

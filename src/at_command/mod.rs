@@ -9,6 +9,7 @@ pub mod at_cstt;
 pub mod ate;
 pub mod ati;
 pub mod cgcontrdp;
+pub mod http;
 pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;

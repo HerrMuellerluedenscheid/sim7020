@@ -9,6 +9,7 @@ use defmt_rtt as _;
 
 use sim7020::at_command;
 use sim7020::Modem;
+use sim7020::at_command::http::HttpMethod::GET;
 
 use bsp::entry;
 use core::fmt::Debug;
@@ -80,22 +81,12 @@ fn main() -> ! {
     // Need to perform clock init before using UART or it will freeze.
     let uart = UartPeripheral::new(pac.UART0, pins_uart, &mut pac.RESETS)
         .enable(
-            // UartConfig::new(9600.Hz(), DataBits::Eight, Option::from(Parity::Odd), StopBits::Two),
             UartConfig::new(9600.Hz(), DataBits::Eight, None, StopBits::One),
             clocks.peripheral_clock.freq(),
         )
         .unwrap();
     let (mut reader, mut writer) = uart.split();
 
-    // This is the correct pin on the Raspberry Pico board. On other boards, even if they have an
-    // on-board LED, it might need to be changed.
-    //
-    // Notably, on the Pico W, the LED is not connected to any of the RP2040 GPIOs but to the cyw43 module instead.
-    // One way to do that is by using [embassy](https://github.com/embassy-rs/embassy/blob/main/examples/rp/src/bin/wifi_blinky.rs)
-    //
-    // If you have a Pico W and want to toggle a LED with a simple GPIO output pin, you can connect an external
-    // LED to one of the GPIO pins, and reference that pin here. Don't forget adding an appropriate resistor
-    // in series with the LED.
     info!("send");
     let mut index = 0;
     let mut led_pin = pins.led.into_push_pull_output();
@@ -112,6 +103,7 @@ fn main() -> ! {
     modem
         .send_and_wait_reply(at_command::at_cpin::PINRequired {})
         .expect("TODO: panic message");
+
     modem
         .send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
@@ -145,6 +137,35 @@ fn main() -> ! {
     modem
         .send_and_wait_reply(at_command::ntp::NTPTime {})
         .unwrap();
+
+    // To test this you can start a server e.g. using python with `python3 -m http.server 8000`
+    modem.send_and_wait_reply(at_command::http::HttpSession{
+        host: "http://88.198.226.54:8000",
+        user: None,
+        password: None
+    }).expect("failed");
+
+    modem.send_and_wait_reply(at_command::http::HttpConnect{
+        client_id: 0
+    }).expect("failed");
+
+    modem.send_and_wait_reply(at_command::http::HttpSend{
+        client_id: 0,
+        method: GET,
+        path: "/hello/world",
+
+    }).expect("failed");
+
+    modem.send_and_wait_reply(at_command::http::HttpDisconnect{
+        client_id: 0,
+
+    }).expect("failed");
+
+    modem.send_and_wait_reply(at_command::http::HttpDestroy{
+        client_id: 0,
+
+    }).expect("failed");
+
     modem
         .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
         .or_else(|e| {

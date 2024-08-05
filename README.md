@@ -2,7 +2,8 @@
 
 Based on the [rp2040-project-template](https://github.com/rp-rs/rp2040-project-template).
 
-This driver currently supports only a subset of the available AT commands of the [SIM7020 modem](https://www.waveshare.com/pico-sim7020e-nb-iot.htm). It's enough to get an NTP time stamp and send data via mqtt:
+This driver currently supports only a subset of the available AT commands of the [SIM7020 modem](https://www.waveshare.com/pico-sim7020e-nb-iot.htm).
+It's enough to get an NTP time stamp and send data via mqtt:
 
 ```rust
 
@@ -50,5 +51,7 @@ This driver currently supports only a subset of the available AT commands of the
         })
         .unwrap();
 ```
+
+Also, check the [example](./examples/pico/src/main.rs) to see e.g. how to send HTTP GET requests.
 
 Feel free to open an issue if you need support for specific other functionality.
