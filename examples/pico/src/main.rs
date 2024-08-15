@@ -8,8 +8,8 @@
 use defmt_rtt as _;
 
 use sim7020::at_command;
-use sim7020::Modem;
 use sim7020::at_command::http::HttpMethod::GET;
+use sim7020::Modem;
 
 use bsp::entry;
 use core::fmt::Debug;
@@ -100,10 +100,7 @@ fn main() -> ! {
         reader: &mut reader,
     };
 
-    modem
-        .send_and_wait_reply(at_command::at_cpin::PINRequired {})
-        .expect("TODO: panic message");
-
+    // TODO: move this into modem::new
     modem
         .send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
@@ -111,8 +108,13 @@ fn main() -> ! {
         .unwrap();
 
     modem
+        .send_and_wait_reply(at_command::at_cpin::PINRequired {})
+        .expect("TODO: panic message");
+
+    let response = modem
         .send_and_wait_reply(at_command::model_identification::ModelIdentification {})
         .unwrap();
+    info!("model id: {}", response);
 
     // todo: this blocks completely
     // modem.send_and_wait_reply(at_command::network_information::NetworkInformationAvailable{}).unwrap();
@@ -121,9 +123,11 @@ fn main() -> ! {
         .send_and_wait_reply(at_command::at_creg::AtCreg {})
         .unwrap();
 
-    modem
+    let response = modem
         .send_and_wait_reply(at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
         .unwrap();
+
+    info!("response: {}", response);
 
     modem
         .send_and_wait_reply(at_command::ntp::StartNTPConnection {
@@ -139,32 +143,34 @@ fn main() -> ! {
         .unwrap();
 
     // To test this you can start a server e.g. using python with `python3 -m http.server 8000`
-    modem.send_and_wait_reply(at_command::http::HttpSession{
-        host: "http://88.198.226.54:8000",
-        user: None,
-        password: None
-    }).expect("failed");
+    let result = modem
+        .send_and_wait_reply(at_command::http::HttpSession {
+            host: "http://88.198.226.54:8000",
+            user: None,
+            password: None,
+        })
+        .expect("failed");
+    info!("created http session: {}", result);
 
-    modem.send_and_wait_reply(at_command::http::HttpConnect{
-        client_id: 0
-    }).expect("failed");
+    modem
+        .send_and_wait_reply(at_command::http::HttpConnect { client_id: 0 })
+        .expect("failed");
 
-    modem.send_and_wait_reply(at_command::http::HttpSend{
-        client_id: 0,
-        method: GET,
-        path: "/hello/world",
+    modem
+        .send_and_wait_reply(at_command::http::HttpSend {
+            client_id: 0,
+            method: GET,
+            path: "/hello/world",
+        })
+        .expect("failed");
 
-    }).expect("failed");
+    modem
+        .send_and_wait_reply(at_command::http::HttpDisconnect { client_id: 0 })
+        .expect("failed");
 
-    modem.send_and_wait_reply(at_command::http::HttpDisconnect{
-        client_id: 0,
-
-    }).expect("failed");
-
-    modem.send_and_wait_reply(at_command::http::HttpDestroy{
-        client_id: 0,
-
-    }).expect("failed");
+    modem
+        .send_and_wait_reply(at_command::http::HttpDestroy { client_id: 0 })
+        .expect("failed");
 
     modem
         .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})

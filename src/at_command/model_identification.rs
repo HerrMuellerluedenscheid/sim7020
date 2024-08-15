@@ -1,17 +1,32 @@
-use crate::at_command::{AtRequest, BufferType};
-use crate::{AtError, BUFFER_SIZE};
-use defmt::Format;
-use embedded_io::Write;
+use crate::at_command::AtResponse::ModelIdentifier;
+use crate::at_command::{AtRequest, AtResponse, BufferType};
+use crate::{AtError};
+use defmt::{Format};
 
 #[derive(Format)]
-pub struct ModelIdentification;
+pub struct ModelIdentification{}
 
-impl AtRequest for ModelIdentification {
-    type Response = Result<(), AtError>;
+impl AtRequest for ModelIdentification{
+    type Response = Result<AtResponse, AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_execute(buffer, true)
             .named("+CGMM")
             .finish()
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let (parsed,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n")
+            .expect_raw_string()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()
+            .unwrap();
+
+        let mut id: [u8; 8] = [0; 8];
+        for (i, b) in parsed.as_bytes().iter().enumerate() {
+            id[i] = *b;
+        }
+        Ok(AtResponse::ModelIdentifier(id))
     }
 }

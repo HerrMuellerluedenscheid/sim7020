@@ -1,7 +1,6 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::Format;
-use embedded_io::Write;
+use defmt::{info, Format};
 
 #[derive(Format)]
 /// Test if a pin is required.

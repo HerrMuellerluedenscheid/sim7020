@@ -1,7 +1,5 @@
 use crate::at_command::{AtRequest, BufferType};
-use crate::BUFFER_SIZE;
 use defmt::Format;
-use embedded_io::Write;
 
 #[derive(Format)]
 pub struct AtI;

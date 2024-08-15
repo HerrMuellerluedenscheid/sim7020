@@ -5,83 +5,68 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
+use crate::at_command::at_cpin::PINRequired;
 use at_command::AtRequest;
+use at_command::AtResponse;
 use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_io::{ErrorType, Read, Write};
+use crate::at_command::http::{HttpClient, HttpSession};
 
 const BUFFER_SIZE: usize = 128;
-const LF: u8 = 10;
+const LF: u8 = 10; // n
+const CR: u8 = 13; // r
+
+const OK_TERMINATOR: [u8; 4] = [b'O', b'K', CR, LF];
 
 pub struct Modem<'a, T: Write, U: Read> {
     pub writer: &'a mut T,
     pub reader: &'a mut U,
 }
 
-#[derive(Debug)]
+#[derive(Debug, defmt::Format)]
 pub enum AtError {
     TooManyReturnedLines,
     ErrorReply,
+    CreateHTTPSessionFailed(HttpClient),
 }
 
 impl<T: Write, U: Read> Modem<'_, T, U> {
-    pub fn send_and_wait_reply<V: AtRequest + Format>(
-        &mut self,
+    pub fn send_and_wait_reply<'a, V: AtRequest + Format + 'a>(
+        &'a mut self,
         payload: V,
-    ) -> Result<[u8; BUFFER_SIZE], AtError> {
-        info!("========>    sending data: {:?}", payload);
+    ) -> Result<AtResponse, AtError> {
 
         let mut at_buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut at_buffer);
         self.writer.write(data).unwrap();
-        self.read_response()
+        let mut response_out: [u8; BUFFER_SIZE] = [b'\0'; BUFFER_SIZE];
+
+        let n_bytes = self.read_response(&mut response_out);
+        let response = payload.parse_response(&response_out);
+        response
     }
 
-    fn read_response(&mut self) -> Result<[u8; 128], AtError> {
-        let mut previous_line: [u8; BUFFER_SIZE] = [b'\0'; BUFFER_SIZE];
-
-        // Assuming there will always max 1 line containing a response followed by one 'OK' line
-        for iline in 0..10_usize {
-            let response = self.read_line_from_modem()?;
-            debug!("line {}: {=[u8]:a}", iline, response);
-            if response.starts_with(b"\x00") {
-                // debug!("skipping empty line: {}", response);
-                continue;
-            }
-            if response.starts_with(b"AT+") {
-                // debug!("skipping echo line");
-                continue;
-            }
-            if response.starts_with(b"OK") {
-                // debug!("found OK");
-                info!("returning response data: {=[u8]:a}", previous_line);
-                return Ok(previous_line);
-            }
-            if response.starts_with(b"ERROR") {
-                error!("response data: {=[u8]:a}", response);
-                return Err(AtError::ErrorReply);
-            };
-            info!("response data: {=[u8]:a}", response);
-            previous_line = response;
-        }
-        Err(AtError::TooManyReturnedLines)
-    }
-
-    fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
-        let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+    fn read_response(&mut self, response_out: &mut [u8; 128]) -> Result<usize, AtError> {
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 10] = [0; 10];
+
         loop {
             match self.reader.read(&mut read_buffer) {
                 Ok(num_bytes) => {
                     for i in 0..num_bytes {
-                        buffer[offset] = read_buffer[i];
-                        match buffer[offset] {
-                            LF => return Ok(buffer),
-                            _ => {}
+                        response_out[offset + i] = read_buffer[i];
+
+                        // why is the index with + 1 and - 3?
+                        if offset + i > 4 {
+                            let start = offset + i - 3;
+                            let stop = offset + i + 1;
+                            if response_out[start..stop] == OK_TERMINATOR {
+                                return Ok(offset + i);
+                            }
                         }
-                        offset += 1;
                     }
+                    offset += num_bytes;
                 }
 
                 Err(e) => {

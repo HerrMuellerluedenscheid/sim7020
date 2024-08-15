@@ -1,6 +1,11 @@
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use defmt::Format;
+
+#[derive(Format, Debug)]
+pub struct HttpClient {
+    pub client_id: u8
+}
 
 /// create a HTTP or HTTPS session
 #[derive(Format)]
@@ -21,6 +26,16 @@ impl AtRequest for HttpSession<'_> {
             // .with_optional_string_parameter(self.user)
             // .with_optional_string_parameter(self.password)
             .finish()
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let (client_id,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()
+            .unwrap();
+        Ok(AtResponse::HTTPSessionCreated(HttpClient{client_id: client_id as u8}))
     }
 }
 
