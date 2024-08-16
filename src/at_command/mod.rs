@@ -1,6 +1,6 @@
+use crate::at_command::http::HttpClient;
 use crate::{AtError, BUFFER_SIZE};
 use defmt::{error, info};
-use crate::at_command::http::HttpClient;
 
 pub mod at_cgatt;
 pub mod at_cpin;
@@ -22,13 +22,12 @@ type BufferType = [u8; BUFFER_SIZE];
 pub enum AtResponse {
     Ok,
     ModelIdentifier([u8; 8]),
+    NTPTimestamp(i64),
     PDPContextDynamicParameters(u8, u8, *const u8, *const u8),
-    HTTPSessionCreated(HttpClient),
+    HTTPSessionCreated(u8), // containes the client_id
 }
 
-
 pub trait AtRequest {
-
     type Response;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize>;

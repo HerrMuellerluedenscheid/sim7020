@@ -12,7 +12,6 @@ use panic_probe as _;
 
 use embassy_executor::Spawner;
 use embassy_rp::{bind_interrupts, gpio};
-use embassy_time::Timer;
 use gpio::{Level, Output};
 
 use sim7020::at_command;

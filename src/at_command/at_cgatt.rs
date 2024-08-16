@@ -1,5 +1,5 @@
 use crate::at_command::{AtRequest, BufferType};
-use crate::{AtError};
+use crate::AtError;
 use defmt::Format;
 
 #[derive(Format)]

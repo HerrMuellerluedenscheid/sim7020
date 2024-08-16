@@ -17,6 +17,7 @@ embedded-io = "0.6.1"
 at-commands = "0.5.4"
 embedded-io-async = { version = "0.6.1", optional = true }
 strum_macros = "0.26.4"
+chrono = { version = "0.4.38", default-features = false}
 
 [features]
 nonblocking = ["embedded-io-async"]

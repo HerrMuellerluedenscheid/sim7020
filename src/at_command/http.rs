@@ -1,10 +1,10 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-use defmt::Format;
+use defmt::{info, Format};
 
 #[derive(Format, Debug)]
 pub struct HttpClient {
-    pub client_id: u8
+    pub client_id: u8,
 }
 
 /// create a HTTP or HTTPS session
@@ -35,7 +35,7 @@ impl AtRequest for HttpSession<'_> {
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()
             .unwrap();
-        Ok(AtResponse::HTTPSessionCreated(HttpClient{client_id: client_id as u8}))
+        Ok(AtResponse::HTTPSessionCreated(client_id as u8))
     }
 }
 
@@ -53,6 +53,11 @@ impl AtRequest for HttpConnect {
             .named("+CHTTPCON")
             .with_int_parameter(self.client_id)
             .finish()
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        info!("parsing {=[u8]:a}", data);
+        Ok(AtResponse::Ok)
     }
 }
 

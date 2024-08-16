@@ -1,14 +1,14 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::{AtError, BUFFER_SIZE};
-use defmt::{Format, info};
+use defmt::{info, Format};
 use strum_macros::FromRepr;
 
 #[derive(FromRepr)]
 #[repr(u8)]
 enum UnsolicitedCode {
-    Disabled=0,
-    Enabled=1,
-    EnabledWithLocation=2,
+    Disabled = 0,
+    Enabled = 1,
+    EnabledWithLocation = 2,
 }
 
 #[derive(Format)]

@@ -9,8 +9,10 @@ use defmt_rtt as _;
 
 use sim7020::at_command;
 use sim7020::at_command::http::HttpMethod::GET;
+use sim7020::AtError;
+use sim7020::at_command::AtResponse;
 use sim7020::Modem;
-
+use sim7020::{Read, Write};
 use bsp::entry;
 use core::fmt::Debug;
 use defmt::*;
@@ -130,6 +132,13 @@ fn main() -> ! {
     info!("response: {}", response);
 
     modem
+        .send_and_wait_reply(at_command::ntp::StopNTPConnection {})
+        .or_else(|e| {
+            warn!("failed stopping ntp connection. Connection already established?");
+            return Err(e);
+        });
+
+    modem
         .send_and_wait_reply(at_command::ntp::StartNTPConnection {
             ip_addr: "202.112.29.82",
         })
@@ -142,35 +151,9 @@ fn main() -> ! {
         .send_and_wait_reply(at_command::ntp::NTPTime {})
         .unwrap();
 
-    // To test this you can start a server e.g. using python with `python3 -m http.server 8000`
-    let result = modem
-        .send_and_wait_reply(at_command::http::HttpSession {
-            host: "http://88.198.226.54:8000",
-            user: None,
-            password: None,
-        })
-        .expect("failed");
-    info!("created http session: {}", result);
-
-    modem
-        .send_and_wait_reply(at_command::http::HttpConnect { client_id: 0 })
-        .expect("failed");
-
-    modem
-        .send_and_wait_reply(at_command::http::HttpSend {
-            client_id: 0,
-            method: GET,
-            path: "/hello/world",
-        })
-        .expect("failed");
-
-    modem
-        .send_and_wait_reply(at_command::http::HttpDisconnect { client_id: 0 })
-        .expect("failed");
-
-    modem
-        .send_and_wait_reply(at_command::http::HttpDestroy { client_id: 0 })
-        .expect("failed");
+    if let Err(e) = test_http_connection(&mut modem) {
+        warn!("http test failed");
+    }
 
     modem
         .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
@@ -270,6 +253,34 @@ fn main() -> ! {
         //     }
         // }
     }
+}
+
+fn test_http_connection<T, U>(modem: &mut Modem<T, U>) -> Result<(), AtError> where T: Write, U: Read  {
+    // To test this you can start a server e.g. using python with `python3 -m http.server 8000`
+    // if this errors, most likely the session count is exhausted (max 4)
+    let result = modem
+        .send_and_wait_reply(at_command::http::HttpSession {
+            host: "http://88.198.226.54:8000",
+            user: None,
+            password: None,
+        })?;
+
+    info!("created http session: {}", result);
+    if let AtResponse::HTTPSessionCreated(client_id) = result {
+        // if this errors, most likely the server did not responsd
+        modem
+            .send_and_wait_reply(at_command::http::HttpConnect { client_id })?;
+        modem.send_and_wait_reply(at_command::http::HttpSend {
+                client_id,
+                method: GET,
+                path: "/hello/world",
+            })?;
+
+        modem.send_and_wait_reply(at_command::http::HttpDisconnect { client_id })?;
+
+        modem.send_and_wait_reply(at_command::http::HttpDestroy { client_id })?;
+    }
+    Ok(())
 }
 
 // End of file

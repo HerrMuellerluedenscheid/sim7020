@@ -1,12 +1,12 @@
 use crate::at_command::AtResponse::ModelIdentifier;
 use crate::at_command::{AtRequest, AtResponse, BufferType};
-use crate::{AtError};
-use defmt::{Format};
+use crate::AtError;
+use defmt::Format;
 
 #[derive(Format)]
-pub struct ModelIdentification{}
+pub struct ModelIdentification {}
 
-impl AtRequest for ModelIdentification{
+impl AtRequest for ModelIdentification {
     type Response = Result<AtResponse, AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
