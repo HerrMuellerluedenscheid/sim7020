@@ -1,4 +1,4 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use defmt::Format;
 

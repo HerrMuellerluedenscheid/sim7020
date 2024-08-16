@@ -5,8 +5,7 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-use crate::at_command::at_cpin::PINRequired;
-use crate::at_command::http::{CreateHttpSession, HttpClient};
+use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
 use defmt::*;

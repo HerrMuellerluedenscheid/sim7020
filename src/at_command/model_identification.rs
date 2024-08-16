@@ -1,4 +1,3 @@
-use crate::at_command::AtResponse::ModelIdentifier;
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use defmt::Format;

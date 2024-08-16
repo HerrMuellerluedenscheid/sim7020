@@ -88,7 +88,6 @@ fn main() -> ! {
     let (mut reader, mut writer) = uart.split();
 
     info!("send");
-    let mut index = 0;
     let mut led_pin = pins.led.into_push_pull_output();
 
     // pico-sim7020E-NB-IOT specific

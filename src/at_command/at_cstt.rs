@@ -26,6 +26,12 @@ pub struct SetAPNUserPassword {
     pub(crate) password: Option<[u8; CSTT_SIZE_MAX]>,
 }
 
+impl Default for SetAPNUserPassword {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SetAPNUserPassword {
     pub fn new() -> Self {
         Self {

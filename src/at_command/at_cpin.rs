@@ -1,6 +1,6 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::{info, Format};
+use defmt::Format;
 
 #[derive(Format)]
 /// Test if a pin is required.

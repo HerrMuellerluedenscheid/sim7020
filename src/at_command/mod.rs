@@ -1,6 +1,5 @@
-use crate::at_command::http::{HttpClient, HttpSession};
 use crate::{AtError, BUFFER_SIZE};
-use defmt::{error, info};
+use defmt::info;
 
 pub mod at_cgatt;
 pub mod at_cpin;

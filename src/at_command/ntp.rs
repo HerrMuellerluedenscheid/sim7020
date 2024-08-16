@@ -15,7 +15,7 @@ impl AtRequest for StartNTPConnection<'_> {
         // todo fix hard coded ip
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSNTPSTART")
-            .with_string_parameter(&self.ip_addr)
+            .with_string_parameter(self.ip_addr)
             .finish()
     }
 }

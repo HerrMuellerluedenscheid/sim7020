@@ -1,10 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
-use crate::{AtError, BUFFER_SIZE};
+use crate::AtError;
 use at_commands::builder::CommandBuilder;
-use defmt::export::write;
 use defmt::{error, info, Format};
-use embedded_io::Write;
-use hex;
 
 #[derive(Format)]
 /// Create a new MQTT connection
@@ -104,12 +101,12 @@ impl AtRequest for MQTTConnect<'_> {
             .named("+CMQCON")
             .with_int_parameter(self.mqtt_id)
             .with_int_parameter(version)
-            .with_string_parameter(&self.client_id)
+            .with_string_parameter(self.client_id)
             .with_int_parameter(self.keepalive_interval)
             .with_int_parameter(self.clean_session as u8)
             .with_int_parameter(self.will_flag as u8)
-            .with_string_parameter(&self.username)
-            .with_string_parameter(&self.password)
+            .with_string_parameter(self.username)
+            .with_string_parameter(self.password)
             .finish()
     }
 }
