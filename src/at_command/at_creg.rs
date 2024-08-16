@@ -1,5 +1,5 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
-use crate::{AtError, BUFFER_SIZE};
+use crate::AtError;
 use defmt::{info, Format};
 use strum_macros::FromRepr;
 

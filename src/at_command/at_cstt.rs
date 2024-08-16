@@ -1,7 +1,6 @@
 use crate::at_command::{AtRequest, BufferType};
-use crate::{AtError, BUFFER_SIZE};
+use crate::AtError;
 use defmt::Format;
-use embedded_io::Write;
 
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
 

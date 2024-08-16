@@ -1,5 +1,6 @@
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+use at_commands::parser::CommandParser;
 use defmt::Format;
 
 #[derive(Format)]
@@ -12,5 +13,16 @@ impl AtRequest for GPRSServiceStatus {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CGATT")
             .finish()
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let (state,) = CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CGATT: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()
+            .unwrap();
+
+        Ok(AtResponse::PacketDomainAttachmentState(state != 0))
     }
 }

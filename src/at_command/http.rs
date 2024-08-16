@@ -1,5 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+use at_commands::builder::CommandBuilder;
+use at_commands::parser::CommandParser;
 use defmt::{info, Format};
 
 #[derive(Format, Debug)]
@@ -7,15 +9,70 @@ pub struct HttpClient {
     pub client_id: u8,
 }
 
+pub struct HttpSession<'a> {
+    pub client_id: u8,
+    pub successful: bool,
+    pub host: &'a str,
+}
+
 /// create a HTTP or HTTPS session
 #[derive(Format)]
-pub struct HttpSession<'a> {
+pub struct GetHttpSessions {}
+
+impl AtRequest for GetHttpSessions {
+    type Response = ();
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        let cmd = CommandBuilder::create_query(buffer, true)
+            .named(b"+CHTTPCREATE")
+            .finish();
+        cmd
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        info!("parse http create response");
+        let connections = CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .finish()
+            .unwrap();
+        let (cid0, state0, _, cid1, state1, _, cid2, state2, _, cid3, state3, _) = connections;
+        Ok(AtResponse::HttpSessions(
+            cid0 as u8,
+            state0 != 0,
+            cid1 as u8,
+            state1 != 0,
+            cid2 as u8,
+            state2 != 0,
+            cid3 as u8,
+            state3 != 0,
+        ))
+    }
+}
+
+/// create a HTTP or HTTPS session
+#[derive(Format)]
+pub struct CreateHttpSession<'a> {
     pub host: &'a str,
     pub user: Option<&'a str>,
     pub password: Option<&'a str>,
 }
 
-impl AtRequest for HttpSession<'_> {
+impl AtRequest for CreateHttpSession<'_> {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {

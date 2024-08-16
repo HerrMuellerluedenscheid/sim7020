@@ -1,4 +1,4 @@
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::{AtError, BUFFER_SIZE};
 use at_commands::builder::CommandBuilder;
 use defmt::export::write;
@@ -37,6 +37,18 @@ impl AtRequest for NewMQTTConnection<'_> {
             // .with_optional_int_parameter(self.context_id)
             .finish()
     }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        info!("parsing: {=[u8]:a}", data);
+        let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CMQNEW: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()
+            .unwrap();
+
+        Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
+    }
 }
 
 #[derive(Format)]
@@ -63,7 +75,7 @@ pub enum MQTTVersion {
 
 pub struct WillOptions<'a> {
     pub topic: &'a str,
-    pub QoS: u8,
+    pub quality_of_service: u8,
     pub retained: bool,
 }
 
@@ -152,6 +164,26 @@ impl AtRequest for MQTTPublish<'_> {
             .with_int_parameter(self.dup as u8)
             .with_int_parameter(self.message.len() as i32)
             .with_string_parameter(self.message.as_bytes())
+            .finish()
+    }
+}
+
+#[derive(Format)]
+pub struct MQTTSubscribe<'a> {
+    pub mqtt_id: u8,    // AT+CMQNEW response
+    pub topic: &'a str, // length max 128b
+    pub qos: u8,        // 0 | 1 | 2
+}
+
+impl AtRequest for MQTTSubscribe<'_> {
+    type Response = ();
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        CommandBuilder::create_set(buffer, true)
+            .named("+CMQSUB")
+            .with_int_parameter(self.mqtt_id)
+            .with_string_parameter(self.topic)
+            .with_int_parameter(self.qos)
             .finish()
     }
 }

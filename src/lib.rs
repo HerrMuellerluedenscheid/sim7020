@@ -6,14 +6,13 @@ pub mod at_command;
 pub mod nonblocking;
 
 use crate::at_command::at_cpin::PINRequired;
-use crate::at_command::http::{HttpClient, HttpSession};
+use crate::at_command::http::{CreateHttpSession, HttpClient};
 use at_command::AtRequest;
 use at_command::AtResponse;
 use defmt::*;
-use embedded_hal::digital::{InputPin, OutputPin};
 pub use embedded_io::{ErrorType, Read, Write};
 
-const BUFFER_SIZE: usize = 128;
+const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
 const CR: u8 = 13; // r
 
@@ -44,6 +43,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
 
         let response = self.read_response(&mut buffer);
         if let Err(AtError::ErrorReply(isize)) = response {
+            error!("error message: {=[u8]:a}", &buffer[..isize]);
             return Err(AtError::ErrorReply(isize));
         }
 
@@ -52,7 +52,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
         response
     }
 
-    fn read_response(&mut self, response_out: &mut [u8; 128]) -> Result<usize, AtError> {
+    fn read_response(&mut self, response_out: &mut [u8; BUFFER_SIZE]) -> Result<usize, AtError> {
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 10] = [0; 10];
 
@@ -78,7 +78,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
                     offset += num_bytes;
                 }
 
-                Err(e) => {
+                Err(_e) => {
                     error!("no data")
                 }
             }
