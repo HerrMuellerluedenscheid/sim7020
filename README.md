@@ -7,4 +7,8 @@ It's enough though, to get an NTP time stamp and send data via HTTP and MQTT.
 
 Check the **[pico example](./examples/pico/src/main.rs)** to see e.g. how to send payloads with HTTP and MQTT.
 
+## Async Support
+
+Enable async support through the **non-blocking** feature flag. Checkout the [embassy pico example](./examples/pico-embassy/src/main.rs).
+
 Feel free to open an issue if you need support for specific other functionality.

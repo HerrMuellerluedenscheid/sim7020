@@ -156,11 +156,7 @@ fn main() -> ! {
         error!("mqtt test failed");
     }
     delay.delay_ms(2000);
-    //
-    // // close mqtt connection again
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
-    //     .unwrap();
+
 
     // Setting the APN fails:
     // match modem.send_and_wait_reply(at_command::at_cstt::SetAPNUserPassword::new().with_apn("iot.1nce.net")){
@@ -238,6 +234,10 @@ where
             dup: false,                      // 0 | 1
             message: "hello world via mqtt", // as hex
         })?;
+        modem
+            .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {mqtt_id})
+            .unwrap();
+
     }
 
     Ok(())

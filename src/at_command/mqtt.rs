@@ -49,7 +49,9 @@ impl AtRequest for NewMQTTConnection<'_> {
 }
 
 #[derive(Format)]
-pub struct CloseMQTTConnection {}
+pub struct CloseMQTTConnection {
+    pub mqtt_id: u8,
+}
 
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
@@ -58,7 +60,7 @@ impl AtRequest for CloseMQTTConnection {
         // todo fix hard coded client id
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
-            .with_int_parameter(0)
+            .with_int_parameter(self.mqtt_id)
             .finish()
     }
 }

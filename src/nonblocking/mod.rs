@@ -1,83 +1,63 @@
-use crate::at_command::AtRequest;
-use crate::BUFFER_SIZE;
+use crate::at_command::{AtRequest, AtResponse};
+use crate::{BUFFER_SIZE, ERROR_TERMINATOR, Modem, OK_TERMINATOR};
 use defmt::*;
 use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::spi::Mode;
 use embedded_io_async::{ErrorType, Read, Write};
 
-pub struct Modem<'a, T: Write, U: Read> {
-    pub writer: &'a mut T,
-    pub reader: &'a mut U,
+pub struct AsyncModem<T: Write, U: Read> {
+    pub writer: T,
+    pub reader: U
 }
 
-#[derive(Debug)]
-pub enum AtError {
-    TooManyReturnedLines,
-    ErrorReply,
-}
+impl<T: Write, U: Read> AsyncModem<T, U> {
 
-impl<T: Write, U: Read> Modem<'_, T, U> {
-    pub async fn send_and_wait_reply<V: AtRequest + Format>(
-        &mut self,
+    pub async fn send_and_wait_reply<'a, V: AtRequest + Format + 'a>(
+        &'a mut self,
         payload: V,
-    ) -> Result<[u8; BUFFER_SIZE], AtError> {
-        info!("========>    sending data: {:?}", payload);
-
-        let mut at_buffer = [0; BUFFER_SIZE];
-        let data = payload.get_command_no_error(&mut at_buffer);
-
-        self.writer.write_all(data).await.unwrap();
-        info!("sent");
-        self.read_response().await
-    }
-
-    async fn read_response(&mut self) -> Result<[u8; 128], AtError> {
-        let mut previous_line: [u8; BUFFER_SIZE] = [b'\0'; BUFFER_SIZE];
-
-        // Assuming there will always max 1 line containing a response followed by one 'OK' line
-        for iline in 0..120_usize {
-            let response = self.read_line_from_modem().await?;
-            // debug!("line {}: {=[u8]:a}", iline, response);
-            if response.starts_with(b"\x00") {
-                // debug!("skipping empty line: {}", response);
-                continue;
-            }
-            if response.starts_with(b"AT+") {
-                // debug!("skipping echo line");
-                continue;
-            }
-            if response.starts_with(b"OK") {
-                // debug!("found OK");
-                return Ok(previous_line);
-            }
-            if response.starts_with(b"ERROR") {
-                error!("response data: {=[u8]:a}", response);
-                return Err(AtError::ErrorReply);
-            };
-            info!("response data: {=[u8]:a}", response);
-            previous_line = response;
+    ) -> Result<AtResponse, crate::AtError> {
+        info!("sending: {}", payload);
+        let mut buffer = [0; BUFFER_SIZE];
+        let data = payload.get_command_no_error(&mut buffer);
+        self.writer.write(data).await.unwrap();
+        let response = self.read_response(&mut buffer).await;
+        if let Err(crate::AtError::ErrorReply(isize)) = response {
+            return Err(crate::AtError::ErrorReply(isize));
         }
-        info!("returning response data: {=[u8]:a}", previous_line);
-        Err(AtError::TooManyReturnedLines)
+
+        let response = payload.parse_response(&buffer);
+        info!("received response: {}", response);
+        response
     }
 
-    async fn read_line_from_modem(&mut self) -> Result<[u8; BUFFER_SIZE], AtError> {
-        let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+    async fn read_response(&mut self, response_out: &mut [u8; BUFFER_SIZE]) -> Result<usize, crate::AtError> {
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 10] = [0; 10];
         loop {
             match self.reader.read(&mut read_buffer).await {
                 Ok(num_bytes) => {
                     for i in 0..num_bytes {
-                        buffer[offset] = read_buffer[i];
-                        match buffer[offset] {
-                            LF => return Ok(buffer),
-                            _ => {}
+                        response_out[offset + i] = read_buffer[i];
+                        // info!("{=[u8]:a}, {}", *response_out, offset + i );
+
+                        // why is the index with + 1 and - 5?
+                        if offset + i >= 5 {
+                            let start = offset + i - 5;
+                            let stop = offset + i + 1;
+                            if response_out[start..stop] == OK_TERMINATOR {
+                                info!("ok");
+                                info!("{=[u8]:a}", *response_out);
+                                return Ok(offset + i);
+                            }
+                            if response_out[start..stop] == ERROR_TERMINATOR {
+                                return Err(crate::AtError::ErrorReply(offset + i));
+                            }
                         }
-                        offset += 1;
                     }
+                    offset += num_bytes;
                 }
 
-                Err(e) => {
+                Err(_e) => {
                     error!("no data")
                 }
             }

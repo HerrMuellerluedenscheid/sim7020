@@ -11,16 +11,18 @@ use defmt::*;
 use panic_probe as _;
 
 use embassy_executor::Spawner;
+use embassy_time::Timer;
 use embassy_rp::{bind_interrupts, gpio};
 use gpio::{Level, Output};
 
-use sim7020::at_command;
-use sim7020::nonblocking::Modem;
+use sim7020::{at_command, AtError};
+use sim7020::nonblocking::AsyncModem;
 
 use embassy_rp::adc::Adc;
 use embassy_rp::gpio::{Input, Pull};
 use embassy_rp::peripherals::UART0;
 use embassy_rp::uart::{BufferedInterruptHandler, BufferedUart};
+use sim7020::at_command::AtResponse;
 
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 const BUFFER_SIZE: usize = 128;
@@ -55,23 +57,24 @@ async fn main(spawner: Spawner) -> ! {
 
     let (mut reader, mut writer) = uart.split();
 
+    Timer::after_millis(500).await;
+
     // reader und writer sind nun async. Heisst
-    let mut modem = Modem {
+    let mut modem = AsyncModem {
         writer: &mut writer,
         reader: &mut reader,
     };
-
+    modem
+        .send_and_wait_reply(at_command::ate::AtEcho {
+            status: at_command::ate::Echo::Disable,
+        })
+        .await
+        .unwrap();
     modem
         .send_and_wait_reply(at_command::at_cpin::PINRequired {})
         .await
         .expect("TODO: panic message");
-    // modem
-    //     .send_and_wait_reply(at_command::ate::AtEcho {
-    //         status: at_command::ate::Echo::Disable,
-    //     })
-    //     .await
-    //     .unwrap();
-    //
+
     // // modem.send_and_wait_reply(at_command::at::At {}).unwrap();
     modem
         .send_and_wait_reply(at_command::model_identification::ModelIdentification {})
@@ -86,77 +89,78 @@ async fn main(spawner: Spawner) -> ! {
         .await
         .unwrap();
 
-    // modem
-    //     .send_and_wait_reply(at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
-    //     .unwrap();
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::ntp::StartNTPConnection {
-    //         ip_addr: "202.112.29.82"
-    //     })
-    //     .or_else(|e| {
-    //         warn!("failed starting ntp connection. Connection already established?");
-    //         return Err(e);
-    //     });
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::ntp::NTPTime {})
-    //     .unwrap();
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
-    //     .or_else(|e| {
-    //         warn!("failed closing mqtt connection");
-    //         return Err(e);
-    //     });
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::MQTTRawData {
-    //         data_format: at_command::mqtt::MQTTDataFormat::Bytes,
-    //     })
-    //     .unwrap();
-    //
-    // match modem.send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
-    //     server: "88.198.226.54",
-    //     port: 1883,
-    //     timeout_ms: 5000,
-    //     buffer_size: 600,
-    //     context_id: None,
-    // }) {
-    //     Ok(_) => info!("connected mqtt"),
-    //     Err(e) => warn!("failed connecting mqtt"),
-    // };
-    // Timer::after_millis(500).await;
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::MQTTConnect {
-    //         mqtt_id: 0,
-    //         version: at_command::mqtt::MQTTVersion::MQTT311,
-    //         client_id: "sdo92u34oij",
-    //         keepalive_interval: 120,
-    //         clean_session: false,
-    //         will_flag: false,
-    //         username: "marius",
-    //         password: "Haufenhistory",
-    //     })
-    //     .unwrap();
-    // Timer::after_millis(1000).await;
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::MQTTPublish {
-    //         mqtt_id: 0,                      // AT+CMQNEW response
-    //         topic: "test",                   // length max 128b
-    //         qos: 1,                          // 0 | 1 | 2
-    //         retained: false,                 // 0 | 1
-    //         dup: false,                      // 0 | 1
-    //         message: "hello world via mqtt", // as hex
-    //     })
-    //     .unwrap();
-    // Timer::after_millis(2000).await;
-    //
-    // // close mqtt connection again
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
-    //     .unwrap();
+    modem
+        .send_and_wait_reply(at_command::ntp::StartNTPConnection {
+            ip_addr: "202.112.29.82"
+        })
+        .await
+        .or_else(|e| {
+            warn!("failed starting ntp connection. Connection already established?");
+            return Err(e);
+        });
+
+    modem
+        .send_and_wait_reply(at_command::ntp::NTPTime {})
+        .await
+        .unwrap();
+
+    modem
+        .send_and_wait_reply(at_command::mqtt::MQTTRawData {
+            data_format: at_command::mqtt::MQTTDataFormat::Bytes,
+        })
+        .await
+        .unwrap();
+
+    match modem.send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
+        server: "88.198.226.54",
+        port: 1883,
+        timeout_ms: 5000,
+        buffer_size: 600,
+        context_id: None,
+    }).await {
+        Ok(AtResponse::MQTTSessionCreated(mqtt_id)) =>
+            {
+                info!("connected mqtt session {}", mqtt_id);
+                modem
+                    .send_and_wait_reply(at_command::mqtt::MQTTConnect {
+                        mqtt_id,
+                        version: at_command::mqtt::MQTTVersion::MQTT311,
+                        client_id: "sdo92u34oij",
+                        keepalive_interval: 120,
+                        clean_session: false,
+                        will_flag: false,
+                        username: "marius",
+                        password: "Haufenhistory",
+                    })
+                    .await
+                    .unwrap();
+                Timer::after_millis(1000).await;
+
+                modem
+                    .send_and_wait_reply(at_command::mqtt::MQTTPublish {
+                        mqtt_id,                         // AT+CMQNEW response
+                        topic: "test",                   // length max 128b
+                        qos: 1,                          // 0 | 1 | 2
+                        retained: false,                 // 0 | 1
+                        dup: false,                      // 0 | 1
+                        message: "hello world via mqtt", // as hex
+                    })
+                    .await
+                    .unwrap();
+                Timer::after_millis(2000).await;
+
+                // close mqtt connection again
+                modem
+                    .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {mqtt_id})
+                    .await
+                    .unwrap();
+
+
+            },
+        Err(e) => warn!("failed connecting mqtt"),
+        _ => {}
+    };
+    Timer::after_millis(500).await;
 
     // Setting the APN fails:
     // match modem.send_and_wait_reply(at_command::at_cstt::SetAPNUserPassword::new().with_apn("iot.1nce.net")){
@@ -176,20 +180,19 @@ async fn main(spawner: Spawner) -> ! {
     info!("receive loop");
 
     loop {
-        // info!("led on!");
-        // led.set_high();
-        // Timer::after_secs(1).await;
-        //
-        // info!("led off!");
-        // led.set_low();
-        // Timer::after_secs(1).await;
-        //
-        // modem
-        //     .send_and_wait_reply(at_command::at_cgatt::GPRSServiceStatus {})
-        //     .unwrap();
-        // modem
-        //     .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
-        //     .unwrap();
+        led.set_high();
+        Timer::after_secs(1).await;
+        led.set_low();
+        Timer::after_secs(1).await;
+
+        modem
+            .send_and_wait_reply(at_command::at_cgatt::GPRSServiceStatus {})
+            .await
+            .unwrap();
+        modem
+            .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
+            .await
+            .unwrap();
         // Timer::after_millis(3000).await;
         // match modem.reader.read() {
         //     Ok(13) => {
