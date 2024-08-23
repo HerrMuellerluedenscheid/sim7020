@@ -40,7 +40,6 @@ pub trait AtRequest {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        info!("parsing: {=[u8]:a}", data);
         Ok(AtResponse::Ok)
     }
 }

@@ -111,11 +111,6 @@ impl AtRequest for HttpConnect {
             .with_int_parameter(self.client_id)
             .finish()
     }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        info!("parsing {=[u8]:a}", data);
-        Ok(AtResponse::Ok)
-    }
 }
 
 /// Disconnect from a server

@@ -15,8 +15,6 @@ impl AtRequest for PDPContextReadDynamicsParameters {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        info!("to parse: {=[u8]:a}", data);
-
         if let b"\r\nOK\r\n" = &data[0..6] {
             warn!("return plain ok. No data available, yet");
             return Ok(AtResponse::Ok);
@@ -31,7 +29,6 @@ impl AtRequest for PDPContextReadDynamicsParameters {
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()
             .unwrap();
-        info!("done{} {} {} {} ", cid, bearer_id, apn, local_address);
         Ok(AtResponse::PDPContextDynamicParameters(
             cid as u8,
             bearer_id as u8,
