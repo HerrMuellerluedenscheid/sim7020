@@ -1,10 +1,9 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::Format;
 
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Enter PIN.
 pub struct GetAPNUserPassword {}
 
@@ -18,7 +17,7 @@ impl AtRequest for GetAPNUserPassword {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Enter PIN.
 pub struct SetAPNUserPassword {
     pub(crate) apn: Option<[u8; CSTT_SIZE_MAX]>,

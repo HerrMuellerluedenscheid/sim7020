@@ -1,22 +1,22 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{BUFFER_SIZE, ERROR_TERMINATOR, Modem, OK_TERMINATOR};
-use defmt::*;
+use crate::{Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal::spi::Mode;
 use embedded_io_async::{ErrorType, Read, Write};
 
+#[cfg(feature = "defmt")]
+use defmt::*;
+
 pub struct AsyncModem<T: Write, U: Read> {
     pub writer: T,
-    pub reader: U
+    pub reader: U,
 }
 
 impl<T: Write, U: Read> AsyncModem<T, U> {
-
-    pub async fn send_and_wait_reply<'a, V: AtRequest + Format + 'a>(
+    pub async fn send_and_wait_reply<'a, V: AtRequest + 'a>(
         &'a mut self,
         payload: V,
     ) -> Result<AtResponse, crate::AtError> {
-        info!("sending: {}", payload);
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
         self.writer.write(data).await.unwrap();
@@ -26,11 +26,15 @@ impl<T: Write, U: Read> AsyncModem<T, U> {
         }
 
         let response = payload.parse_response(&buffer);
+        #[cfg(feature = "defmt")]
         info!("received response: {}", response);
         response
     }
 
-    async fn read_response(&mut self, response_out: &mut [u8; BUFFER_SIZE]) -> Result<usize, crate::AtError> {
+    async fn read_response(
+        &mut self,
+        response_out: &mut [u8; BUFFER_SIZE],
+    ) -> Result<usize, crate::AtError> {
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 10] = [0; 10];
         loop {
@@ -45,8 +49,6 @@ impl<T: Write, U: Read> AsyncModem<T, U> {
                             let start = offset + i - 5;
                             let stop = offset + i + 1;
                             if response_out[start..stop] == OK_TERMINATOR {
-                                info!("ok");
-                                info!("{=[u8]:a}", *response_out);
                                 return Ok(offset + i);
                             }
                             if response_out[start..stop] == ERROR_TERMINATOR {
@@ -58,6 +60,7 @@ impl<T: Write, U: Read> AsyncModem<T, U> {
                 }
 
                 Err(_e) => {
+                    #[cfg(feature = "defmt")]
                     error!("no data")
                 }
             }

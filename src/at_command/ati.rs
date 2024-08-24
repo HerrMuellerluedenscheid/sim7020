@@ -1,7 +1,6 @@
 use crate::at_command::{AtRequest, BufferType};
-use defmt::Format;
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AtI;
 
 pub struct ProductInformation {}

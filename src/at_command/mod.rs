@@ -1,5 +1,4 @@
 use crate::{AtError, BUFFER_SIZE};
-use defmt::info;
 
 pub mod at_cgatt;
 pub mod at_cpin;
@@ -17,7 +16,7 @@ pub mod ntp;
 
 type BufferType = [u8; BUFFER_SIZE];
 
-#[derive(defmt::Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AtResponse {
     Ok,
     ModelIdentifier([u8; 8]),
@@ -39,7 +38,7 @@ pub trait AtRequest {
         self.get_command(buffer).expect("buffer too small")
     }
 
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+    fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
         Ok(AtResponse::Ok)
     }
 }

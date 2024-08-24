@@ -1,15 +1,16 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::Format;
 
-#[derive(Format, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum Echo {
     Disable = 0,
     Enable = 1,
 }
 
-#[derive(Format, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Clone, Copy)]
 pub struct AtEcho {
     pub status: Echo,
 }

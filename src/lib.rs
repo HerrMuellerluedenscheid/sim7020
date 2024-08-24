@@ -8,6 +8,7 @@ pub mod nonblocking;
 use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
+#[cfg(feature = "defmt")]
 use defmt::*;
 pub use embedded_io::{ErrorType, Read, Write};
 
@@ -23,7 +24,8 @@ pub struct Modem<'a, T: Write, U: Read> {
     pub reader: &'a mut U,
 }
 
-#[derive(Debug, defmt::Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub enum AtError {
     TooManyReturnedLines,
     ErrorReply(usize),
@@ -31,23 +33,26 @@ pub enum AtError {
 }
 
 impl<T: Write, U: Read> Modem<'_, T, U> {
-    pub fn send_and_wait_reply<'a, V: AtRequest + Format + 'a>(
+    pub fn send_and_wait_reply<'a, V: AtRequest + 'a>(
         &'a mut self,
         payload: V,
     ) -> Result<AtResponse, AtError> {
-        info!("sending: {}", payload);
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
         self.writer.write(data).unwrap();
 
         let response = self.read_response(&mut buffer);
         if let Err(AtError::ErrorReply(isize)) = response {
+            #[cfg(feature = "defmt")]
             error!("error message: {=[u8]:a}", &buffer[..isize]);
             return Err(AtError::ErrorReply(isize));
         }
 
         let response = payload.parse_response(&buffer);
+
+        #[cfg(feature = "defmt")]
         info!("received response: {}", response);
+
         response
     }
 
@@ -78,6 +83,7 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
                 }
 
                 Err(_e) => {
+                    #[cfg(feature = "defmt")]
                     error!("no data")
                 }
             }

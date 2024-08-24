@@ -1,17 +1,7 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::Format;
-use strum_macros::FromRepr;
 
-#[derive(FromRepr)]
-#[repr(u8)]
-enum UnsolicitedCode {
-    Disabled = 0,
-    Enabled = 1,
-    EnabledWithLocation = 2,
-}
-
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AtCreg;
 
 impl AtRequest for AtCreg {

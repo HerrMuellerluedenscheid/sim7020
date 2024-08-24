@@ -1,8 +1,7 @@
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
-use defmt::Format;
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// TA returns a list of quadruplets, each representing an operator present in
 /// the network. Any of the formats may be unavailable and should then be an
 /// empty field. The list of operators shall be in order: home network,
@@ -19,7 +18,7 @@ impl AtRequest for NetworkInformationAvailable {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Current mode and the currently selected operator
 pub struct NetworkInformation;
 

@@ -1,9 +1,8 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use chrono::NaiveDateTime;
-use defmt::Format;
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct StartNTPConnection<'a> {
     pub ip_addr: &'a str,
 }
@@ -20,7 +19,7 @@ impl AtRequest for StartNTPConnection<'_> {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct StopNTPConnection;
 
 impl AtRequest for StopNTPConnection {
@@ -33,7 +32,7 @@ impl AtRequest for StopNTPConnection {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NTPTime {}
 
 impl AtRequest for NTPTime {

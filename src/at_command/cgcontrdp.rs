@@ -1,8 +1,10 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-use defmt::{info, warn, Format};
 
-#[derive(Format)]
+#[cfg(feature = "defmt")]
+use defmt::warn;
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PDPContextReadDynamicsParameters;
 
 impl AtRequest for PDPContextReadDynamicsParameters {
@@ -16,6 +18,7 @@ impl AtRequest for PDPContextReadDynamicsParameters {
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         if let b"\r\nOK\r\n" = &data[0..6] {
+            #[cfg(feature = "defmt")]
             warn!("return plain ok. No data available, yet");
             return Ok(AtResponse::Ok);
         }

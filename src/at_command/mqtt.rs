@@ -1,9 +1,10 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::builder::CommandBuilder;
-use defmt::{error, info, Format};
+#[cfg(feature = "defmt")]
+use defmt::error;
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Create a new MQTT connection
 pub struct NewMQTTConnection<'a> {
     pub server: &'a str,
@@ -13,18 +14,37 @@ pub struct NewMQTTConnection<'a> {
     pub context_id: Option<u16>, // PDP context, AT+CGAT response
 }
 
+impl NewMQTTConnection<'_> {
+    pub fn new<'b>(
+        server: &'b str,
+        port: u16,
+        timeout_ms: u16,
+        buffer_size: u16,
+        context_id: Option<u16>,
+    ) -> NewMQTTConnection<'b> {
+        // TODO: move into new
+        if timeout_ms > 60000 {
+            #[cfg(feature = "defmt")]
+            error!("timeout is out of range")
+        }
+        if (buffer_size > 1132) | (buffer_size < 20) {
+            #[cfg(feature = "defmt")]
+            error!("buffer_size is out of range")
+        }
+        NewMQTTConnection {
+            server,
+            port,
+            timeout_ms,
+            buffer_size,
+            context_id,
+        }
+    }
+}
+
 impl AtRequest for NewMQTTConnection<'_> {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        // TODO: move into new
-        if self.timeout_ms > 60000 {
-            error!("timeout is out of range")
-        }
-        if (self.buffer_size > 1132) | (self.buffer_size < 20) {
-            error!("buffer_size is out of range")
-        }
-
         CommandBuilder::create_set(buffer, true)
             .named("+CMQNEW")
             .with_string_parameter(self.server)
@@ -36,7 +56,6 @@ impl AtRequest for NewMQTTConnection<'_> {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        info!("parsing: {=[u8]:a}", data);
         let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CMQNEW: ")
             .expect_int_parameter()
@@ -48,7 +67,7 @@ impl AtRequest for NewMQTTConnection<'_> {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CloseMQTTConnection {
     pub mqtt_id: u8,
 }
@@ -65,7 +84,7 @@ impl AtRequest for CloseMQTTConnection {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 pub enum MQTTVersion {
     MQTT31,
@@ -78,7 +97,7 @@ pub struct WillOptions<'a> {
     pub retained: bool,
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTConnect<'a> {
     pub mqtt_id: u8,
     pub version: MQTTVersion,
@@ -113,13 +132,13 @@ impl AtRequest for MQTTConnect<'_> {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum MQTTDataFormat {
     Bytes,
     Hex,
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTRawData {
     pub data_format: MQTTDataFormat,
 }
@@ -140,7 +159,7 @@ impl AtRequest for MQTTRawData {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTPublish<'a> {
     pub mqtt_id: u8,      // AT+CMQNEW response
     pub topic: &'a str,   // length max 128b
@@ -167,7 +186,7 @@ impl AtRequest for MQTTPublish<'_> {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTSubscribe<'a> {
     pub mqtt_id: u8,    // AT+CMQNEW response
     pub topic: &'a str, // length max 128b

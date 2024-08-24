@@ -2,9 +2,9 @@ use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::builder::CommandBuilder;
 use at_commands::parser::CommandParser;
-use defmt::{info, Format};
 
-#[derive(Format, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub struct HttpClient {
     pub client_id: u8,
 }
@@ -16,7 +16,7 @@ pub struct HttpSession<'a> {
 }
 
 /// create a HTTP or HTTPS session
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct GetHttpSessions {}
 
 impl AtRequest for GetHttpSessions {
@@ -30,7 +30,6 @@ impl AtRequest for GetHttpSessions {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        info!("parse http create response");
         let connections = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CHTTPCREATE: ")
             .expect_int_parameter()
@@ -65,7 +64,7 @@ impl AtRequest for GetHttpSessions {
 }
 
 /// create a HTTP or HTTPS session
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CreateHttpSession<'a> {
     pub host: &'a str,
     pub user: Option<&'a str>,
@@ -97,7 +96,7 @@ impl AtRequest for CreateHttpSession<'_> {
 }
 
 /// Connect to a server using http or https
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct HttpConnect {
     pub client_id: u8,
 }
@@ -114,7 +113,7 @@ impl AtRequest for HttpConnect {
 }
 
 /// Disconnect from a server
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct HttpDisconnect {
     pub client_id: u8,
 }
@@ -131,7 +130,7 @@ impl AtRequest for HttpDisconnect {
 }
 
 /// Connect to a server using http or https
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct HttpDestroy {
     pub client_id: u8,
 }
@@ -147,7 +146,7 @@ impl AtRequest for HttpDestroy {
     }
 }
 
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[repr(u8)]
 pub enum HttpMethod {
     GET = 0,
@@ -159,7 +158,7 @@ pub enum HttpMethod {
 /// customer_header: The string converted from customer header hex data
 /// content_type: A string indicate the content type of the content, if the method is not POST and PUT, it must be empty.
 /// content_string: The string converted from content hex data.
-#[derive(Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct HttpSend<'a> {
     pub client_id: u8,
     pub method: HttpMethod,
