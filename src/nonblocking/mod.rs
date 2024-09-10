@@ -1,5 +1,5 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
+use crate::{at_command, Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal::spi::Mode;
 use embedded_io_async::{ErrorType, Read, Write};
@@ -12,8 +12,22 @@ pub struct AsyncModem<T: Write, U: Read> {
     pub reader: U,
 }
 
-impl<T: Write, U: Read> AsyncModem<T, U> {
-    pub async fn send_and_wait_reply<'a, V: AtRequest + 'a>(
+impl<'a, T: Write, U: Read> AsyncModem<T, U> {
+    pub async fn new(writer: T, reader: U) -> Self {
+        let mut modem = Self { writer, reader };
+        modem.disable_echo().await;
+        modem
+    }
+
+    async fn disable_echo(&mut self) {
+        self.send_and_wait_reply(at_command::ate::AtEcho {
+            status: at_command::ate::Echo::Disable,
+        })
+        .await
+        .unwrap();
+    }
+
+    pub async fn send_and_wait_reply<V: AtRequest + 'a>(
         &'a mut self,
         payload: V,
     ) -> Result<AtResponse, crate::AtError> {
