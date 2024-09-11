@@ -164,11 +164,11 @@ impl AtRequest for MQTTRawData {
 /// The message length has to be between 2 and 1000 byte.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTPublish<'a> {
-    pub mqtt_id: u8,      // AT+CMQNEW response
-    pub topic: &'a str,   // length max 128b
-    pub qos: u8,          // 0 | 1 | 2
-    pub retained: bool,   // 0 | 1
-    pub dup: bool,        // 0 | 1
+    pub mqtt_id: u8,       // AT+CMQNEW response
+    pub topic: &'a str,    // length max 128b
+    pub qos: u8,           // 0 | 1 | 2
+    pub retained: bool,    // 0 | 1
+    pub dup: bool,         // 0 | 1
     pub message: &'a [u8], // as hex
 }
 

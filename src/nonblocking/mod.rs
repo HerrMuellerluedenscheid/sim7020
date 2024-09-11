@@ -55,15 +55,17 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
                         // info!("{=[u8]:a}, {}", *response_out, offset + i );
 
                         // why is the index with + 1 and - 5?
-                        if offset + i >= 5 {
-                            let start = offset + i - 5;
-                            let stop = offset + i + 1;
-                            if response_out[start..stop] == OK_TERMINATOR {
-                                return Ok(offset + i);
-                            }
-                            if response_out[start..stop] == ERROR_TERMINATOR {
-                                return Err(crate::AtError::ErrorReply(offset + i));
-                            }
+                        if offset + i < 5 {
+                            continue;
+                        }
+
+                        let start = offset + i - 5;
+                        let stop = offset + i + 1;
+
+                        match &response_out[start..stop] {
+                            OK_TERMINATOR => return Ok(offset + i),
+                            ERROR_TERMINATOR => return Err(crate::AtError::ErrorReply(offset + i)),
+                            _ => continue,
                         }
                     }
                     offset += num_bytes;
