@@ -34,11 +34,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
         self.writer.write(data).await.unwrap();
-        let response = self.read_response(&mut buffer).await;
-        if let Err(crate::AtError::ErrorReply(isize)) = response {
-            return Err(crate::AtError::ErrorReply(isize));
-        }
-
+        let response = self.read_response(&mut buffer).await?;
         let response = payload.parse_response(&buffer);
         #[cfg(feature = "defmt")]
         info!("received response: {}", response);
