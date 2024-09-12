@@ -49,8 +49,8 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     //     self
     // }
 
-    pub fn send_and_wait_reply<V: AtRequest + 'a>(
-        &'a mut self,
+    pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
+        &'b mut self,
         payload: V,
     ) -> Result<AtResponse, AtError> {
         let mut buffer = [0; BUFFER_SIZE];
