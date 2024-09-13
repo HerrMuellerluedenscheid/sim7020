@@ -87,8 +87,17 @@ fn main() -> ! {
         .unwrap();
     let (mut reader, mut writer) = uart.split();
 
-    info!("send");
+    let mut power_pin = pins.gpio14.into_push_pull_output();
+    let mut wake_pin = pins.gpio17.into_push_pull_output();
     let mut led_pin = pins.led.into_push_pull_output();
+
+    info!("resetting modem");
+    power_pin.set_low().unwrap();
+    led_pin.set_low().unwrap();
+    delay.delay_ms(1000);
+    led_pin.set_high().unwrap();
+    power_pin.set_high().unwrap();
+    delay.delay_ms(10000);
 
     // pico-sim7020E-NB-IOT specific
     // GP14 -> PWR: pull down to shutdown
@@ -157,7 +166,6 @@ fn main() -> ! {
     }
     delay.delay_ms(2000);
 
-
     // Setting the APN fails:
     // match modem.send_and_wait_reply(at_command::at_cstt::SetAPNUserPassword::new().with_apn("iot.1nce.net")){
     //     Ok(result) => info!("set apn"),
@@ -194,7 +202,7 @@ where
     U: Read,
 {
     modem
-        .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {})
+        .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection { mqtt_id: 0 })
         .or_else(|e| {
             warn!("failed closing mqtt connection");
             return Err(e);
@@ -228,16 +236,15 @@ where
         delay.delay_ms(500);
         modem.send_and_wait_reply(at_command::mqtt::MQTTPublish {
             mqtt_id,
-            topic: "test",                   // length max 128b
-            qos: 1,                          // 0 | 1 | 2
-            retained: false,                 // 0 | 1
-            dup: false,                      // 0 | 1
-            message: "hello world via mqtt", // as hex
+            topic: "test",                    // length max 128b
+            qos: 1,                           // 0 | 1 | 2
+            retained: false,                  // 0 | 1
+            dup: false,                       // 0 | 1
+            message: b"hello world via mqtt", // as hex
         })?;
         modem
-            .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {mqtt_id})
+            .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection { mqtt_id })
             .unwrap();
-
     }
 
     Ok(())

@@ -8,6 +8,7 @@ pub mod nonblocking;
 use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
+use core::ptr::read;
 #[cfg(feature = "defmt")]
 use defmt::*;
 pub use embedded_io::{ErrorType, Read, Write};
@@ -16,8 +17,8 @@ const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
 const CR: u8 = 13; // r
 
-const OK_TERMINATOR: [u8; 6] = [CR, LF, b'O', b'K', CR, LF];
-const ERROR_TERMINATOR: [u8; 6] = [b'R', b'R', b'O', b'R', CR, LF];
+const OK_TERMINATOR: &[u8] = &[CR, LF, b'O', b'K', CR, LF];
+const ERROR_TERMINATOR: &[u8] = &[b'R', b'R', b'O', b'R', CR, LF];
 
 pub struct Modem<'a, T: Write, U: Read> {
     pub writer: &'a mut T,
@@ -32,9 +33,24 @@ pub enum AtError {
     CreateHTTPSessionFailed(HttpClient),
 }
 
-impl<T: Write, U: Read> Modem<'_, T, U> {
-    pub fn send_and_wait_reply<'a, V: AtRequest + 'a>(
-        &'a mut self,
+impl<'a, T: Write, U: Read> Modem<'a, T, U> {
+    pub fn new(writer: &'a mut T, reader: &'a mut U) -> Self {
+        let mut modem = Self { writer, reader };
+        // let modem = modem.disable_echo();  // todo
+        modem
+    }
+
+    // fn disable_echo(mut self) -> Self{
+    //     self
+    //         .send_and_wait_reply(at_command::ate::AtEcho {
+    //             status: at_command::ate::Echo::Disable,
+    //         })
+    //         .unwrap();
+    //     self
+    // }
+
+    pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
+        &'b mut self,
         payload: V,
     ) -> Result<AtResponse, AtError> {
         let mut buffer = [0; BUFFER_SIZE];
@@ -68,15 +84,17 @@ impl<T: Write, U: Read> Modem<'_, T, U> {
                         // info!("{=[u8]:a}, {}", *response_out, offset + i );
 
                         // why is the index with + 1 and - 5?
-                        if offset + i >= 5 {
-                            let start = offset + i - 5;
-                            let stop = offset + i + 1;
-                            if response_out[start..stop] == OK_TERMINATOR {
-                                return Ok(offset + i);
-                            }
-                            if response_out[start..stop] == ERROR_TERMINATOR {
-                                return Err(AtError::ErrorReply(offset + i));
-                            }
+                        if offset + i < 5 {
+                            continue;
+                        }
+
+                        let start = offset + i - 5;
+                        let stop = offset + i + 1;
+
+                        match &response_out[start..stop] {
+                            OK_TERMINATOR => return Ok(offset + i),
+                            ERROR_TERMINATOR => return Err(crate::AtError::ErrorReply(offset + i)),
+                            _ => continue,
                         }
                     }
                     offset += num_bytes;
