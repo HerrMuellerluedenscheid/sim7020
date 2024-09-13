@@ -11,12 +11,12 @@ use defmt::*;
 use panic_probe as _;
 
 use embassy_executor::Spawner;
-use embassy_time::Timer;
 use embassy_rp::{bind_interrupts, gpio};
+use embassy_time::Timer;
 use gpio::{Level, Output};
 
-use sim7020::{at_command, AtError};
 use sim7020::nonblocking::AsyncModem;
+use sim7020::{at_command, AtError};
 
 use embassy_rp::adc::Adc;
 use embassy_rp::gpio::{Input, Pull};
@@ -91,7 +91,7 @@ async fn main(spawner: Spawner) -> ! {
 
     modem
         .send_and_wait_reply(at_command::ntp::StartNTPConnection {
-            ip_addr: "202.112.29.82"
+            ip_addr: "202.112.29.82",
         })
         .await
         .or_else(|e| {
@@ -111,52 +111,52 @@ async fn main(spawner: Spawner) -> ! {
         .await
         .unwrap();
 
-    match modem.send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
-        server: "88.198.226.54",
-        port: 1883,
-        timeout_ms: 5000,
-        buffer_size: 600,
-        context_id: None,
-    }).await {
-        Ok(AtResponse::MQTTSessionCreated(mqtt_id)) =>
-            {
-                info!("connected mqtt session {}", mqtt_id);
-                modem
-                    .send_and_wait_reply(at_command::mqtt::MQTTConnect {
-                        mqtt_id,
-                        version: at_command::mqtt::MQTTVersion::MQTT311,
-                        client_id: "sdo92u34oij",
-                        keepalive_interval: 120,
-                        clean_session: false,
-                        will_flag: false,
-                        username: "marius",
-                        password: "Haufenhistory",
-                    })
-                    .await
-                    .unwrap();
-                Timer::after_millis(1000).await;
+    match modem
+        .send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
+            server: "88.198.226.54",
+            port: 1883,
+            timeout_ms: 5000,
+            buffer_size: 600,
+            context_id: None,
+        })
+        .await
+    {
+        Ok(AtResponse::MQTTSessionCreated(mqtt_id)) => {
+            info!("connected mqtt session {}", mqtt_id);
+            modem
+                .send_and_wait_reply(at_command::mqtt::MQTTConnect {
+                    mqtt_id,
+                    version: at_command::mqtt::MQTTVersion::MQTT311,
+                    client_id: "sdo92u34oij",
+                    keepalive_interval: 120,
+                    clean_session: false,
+                    will_flag: false,
+                    username: "marius",
+                    password: "Haufenhistory",
+                })
+                .await
+                .unwrap();
+            Timer::after_millis(1000).await;
 
-                modem
-                    .send_and_wait_reply(at_command::mqtt::MQTTPublish {
-                        mqtt_id,                         // AT+CMQNEW response
-                        topic: "test",                   // length max 128b
-                        qos: 1,                          // 0 | 1 | 2
-                        retained: false,                 // 0 | 1
-                        dup: false,                      // 0 | 1
-                        message: "hello world via mqtt", // as hex
-                    })
-                    .await
-                    .unwrap();
-                Timer::after_millis(2000).await;
+            modem
+                .send_and_wait_reply(at_command::mqtt::MQTTPublish {
+                    mqtt_id,                          // AT+CMQNEW response
+                    topic: "test",                    // length max 128b
+                    qos: 1,                           // 0 | 1 | 2
+                    retained: false,                  // 0 | 1
+                    dup: false,                       // 0 | 1
+                    message: b"hello world via mqtt", // as hex
+                })
+                .await
+                .unwrap();
+            Timer::after_millis(2000).await;
 
-                // close mqtt connection again
-                modem
-                    .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection {mqtt_id})
-                    .await
-                    .unwrap();
-
-
-            },
+            // close mqtt connection again
+            modem
+                .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection { mqtt_id })
+                .await
+                .unwrap();
+        }
         Err(e) => warn!("failed connecting mqtt"),
         _ => {}
     };

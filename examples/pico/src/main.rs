@@ -87,8 +87,17 @@ fn main() -> ! {
         .unwrap();
     let (mut reader, mut writer) = uart.split();
 
-    info!("send");
+    let mut power_pin = pins.gpio14.into_push_pull_output();
+    let mut wake_pin = pins.gpio17.into_push_pull_output();
     let mut led_pin = pins.led.into_push_pull_output();
+
+    info!("resetting modem");
+    power_pin.set_low().unwrap();
+    led_pin.set_low().unwrap();
+    delay.delay_ms(1000);
+    led_pin.set_high().unwrap();
+    power_pin.set_high().unwrap();
+    delay.delay_ms(10000);
 
     // pico-sim7020E-NB-IOT specific
     // GP14 -> PWR: pull down to shutdown
