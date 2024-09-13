@@ -3,8 +3,9 @@
 [package]
 edition = "2021"
 name = "sim7020"
-version = "1.0.0"
+version = "1.1.0"
 license = "MIT"
+repository = "https://github.com/HerrMuellerluedenscheid/sim7020"
 description = "driver for sim7020E NB IoT modem"
 
 [dependencies]
