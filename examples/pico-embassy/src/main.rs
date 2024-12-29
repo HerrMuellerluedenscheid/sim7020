@@ -55,33 +55,30 @@ async fn main(spawner: Spawner) -> ! {
         &mut rx_buffer,
         Default::default(),
     );
+
+    let (mut reader, mut writer) = uart.split();
     info!("resetting modem");
     power_pin.set_low();
     led.set_low();
     Timer::after_millis(500).await;
     led.set_high();
     power_pin.set_high();
-    Timer::after_millis(500).await;
+    Timer::after_millis(1000).await;
     info!("resetting modem. done");
 
-    let (mut reader, mut writer) = uart.split();
-
-    Timer::after_millis(1000).await;
-
     // reader und writer sind nun async. Heisst
-    let mut modem = AsyncModem {
-        writer: &mut writer,
-        reader: &mut reader,
-    };
+    let mut modem = AsyncModem::new(&mut writer, &mut reader).await.unwrap();
 
     modem
         .verbosity(ReportMobileEquipmentErrorSetting::EnabledVerbose)
-        .await;
-    info!("Disable Echo");
-    Timer::after_millis(500).await;
+        .await
+        .unwrap();
 
-    modem.disable_echo().await;
-    Timer::after_millis(500).await;
+    modem
+        .send_and_wait_reply(at_command::at_creg::AtCregError {})
+        .await
+        .expect("TODO: panic message");
+    Timer::after_millis(10000).await;
 
     info!("Enter pin");
     modem

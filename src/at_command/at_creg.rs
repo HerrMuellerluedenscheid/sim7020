@@ -28,3 +28,18 @@ impl AtRequest for AtCreg {
     //     Ok(AtResponse::Ok)
     // }
 }
+
+
+// provokes an error for testing purposes
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct AtCregError;
+impl AtRequest for AtCregError {
+    type Response = Result<(), AtError>;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CREG")
+            .with_int_parameter(5)
+            .finish()
+    }
+}

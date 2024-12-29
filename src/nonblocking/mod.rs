@@ -1,11 +1,14 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{at_command, Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
+use crate::{at_command, AtError, Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
 use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal::spi::Mode;
 use embedded_io_async::{ErrorType, Read, Write};
 
 #[cfg(feature = "defmt")]
 use defmt::*;
+use embedded_io::{Error, ErrorKind};
+use log::error;
+use crate::at_command::at_creg::AtCregError;
 use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 
 pub struct AsyncModem<T: Write, U: Read> {
@@ -14,26 +17,24 @@ pub struct AsyncModem<T: Write, U: Read> {
 }
 
 impl<'a, T: Write, U: Read> AsyncModem<T, U> {
-    pub async fn new(writer: T, reader: U) -> Self {
+    pub async fn new(writer: T, reader: U) -> Result<Self, AtError> {
         let mut modem = Self { writer, reader };
-        modem.disable_echo().await;
-        modem
+        modem.disable_echo().await?;
+        Ok(modem)
     }
 
-    pub async fn disable_echo(&mut self) {
+    async fn disable_echo(&mut self) -> Result<AtResponse, AtError> {
         self.send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
         .await
-        .unwrap();
     }
 
-    pub async fn verbosity(&mut self, verbosity: ReportMobileEquipmentErrorSetting) {
+    pub async fn verbosity(&mut self, verbosity: ReportMobileEquipmentErrorSetting) -> Result<AtResponse, AtError> {
         self.send_and_wait_reply(at_command::cmee::WriteReportMobileEquipmentError {
             setting: verbosity,
         })
             .await
-            .unwrap();
     }
 
     pub async fn send_and_wait_reply<V: AtRequest + 'a>(
@@ -45,13 +46,41 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         #[cfg(feature = "defmt")]
         debug!("payload: {=[u8]:a}", &data);
         self.writer.write(data).await.unwrap();
+        match self.read_response(&mut buffer).await{
+            Ok(response_size) => {
+                #[cfg(feature = "defmt")]
+                debug!("received response: {=[u8]:a}", buffer[..response_size]);
+                let response = payload.parse_response(&buffer);
+                #[cfg(feature = "defmt")]
+                debug!("parsed response: {}", response);
+                response
+            }
+            Err(at_error) => {
+                match at_error {
+                    AtError::ErrorReply(response_size) => {
+                        #[cfg(feature = "defmt")]
+                        debug!("received response: {=[u8]:a}", buffer[..response_size]);
+                    }
+                    _ => {
+                            #[cfg(feature = "defmt")]
+                            debug!("error: {:?}", at_error);
+                        }
+                    }
+
+                Err(at_error)
+
+            }
+        }
+
+    }
+
+    pub async fn read_next_response(&mut self) -> Result<AtResponse, crate::AtError>{
+        let mut buffer = [0; BUFFER_SIZE];
+        #[cfg(feature = "defmt")]
         let response_size = self.read_response(&mut buffer).await?;
         #[cfg(feature = "defmt")]
         debug!("received response: {=[u8]:a}", buffer[..response_size]);
-        let response = payload.parse_response(&buffer);
-        #[cfg(feature = "defmt")]
-        debug!("parsed response: {}", response);
-        response
+        Ok(AtResponse::Ok)
     }
 
     async fn read_response(
@@ -84,9 +113,9 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
                     offset += num_bytes;
                 }
 
-                Err(_e) => {
+                Err(e) => {
                     #[cfg(feature = "defmt")]
-                    error!("no data")
+                    error!("no data: {:?}", e.kind());
                 }
             }
         }
