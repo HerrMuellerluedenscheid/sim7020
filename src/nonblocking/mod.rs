@@ -6,6 +6,7 @@ use embedded_io_async::{ErrorType, Read, Write};
 
 #[cfg(feature = "defmt")]
 use defmt::*;
+use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 
 pub struct AsyncModem<T: Write, U: Read> {
     pub writer: T,
@@ -19,12 +20,20 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         modem
     }
 
-    async fn disable_echo(&mut self) {
+    pub async fn disable_echo(&mut self) {
         self.send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
         .await
         .unwrap();
+    }
+
+    pub async fn verbosity(&mut self, verbosity: ReportMobileEquipmentErrorSetting) {
+        self.send_and_wait_reply(at_command::cmee::WriteReportMobileEquipmentError {
+            setting: verbosity,
+        })
+            .await
+            .unwrap();
     }
 
     pub async fn send_and_wait_reply<V: AtRequest + 'a>(
@@ -34,12 +43,14 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
         #[cfg(feature = "defmt")]
-        debug!("wrote payload: {=[u8]:a}", &data);
+        debug!("payload: {=[u8]:a}", &data);
         self.writer.write(data).await.unwrap();
-        let response = self.read_response(&mut buffer).await?;
+        let response_size = self.read_response(&mut buffer).await?;
+        #[cfg(feature = "defmt")]
+        debug!("received response: {=[u8]:a}", buffer[..response_size]);
         let response = payload.parse_response(&buffer);
         #[cfg(feature = "defmt")]
-        debug!("received response: {}", response);
+        debug!("parsed response: {}", response);
         response
     }
 
@@ -54,7 +65,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
                 Ok(num_bytes) => {
                     for i in 0..num_bytes {
                         response_out[offset + i] = read_buffer[i];
-                        // info!("{=[u8]:a}, {}", *response_out, offset + i );
+                        // debug!("{=[u8]:a}, {}", *response_out, offset + i );
 
                         // why is the index with + 1 and - 5?
                         if offset + i < 5 {

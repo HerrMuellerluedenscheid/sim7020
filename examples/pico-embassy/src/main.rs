@@ -11,17 +11,17 @@ use defmt::*;
 use panic_probe as _;
 
 use embassy_executor::Spawner;
-use embassy_rp::{bind_interrupts, gpio};
+use embassy_rp::bind_interrupts;
 use embassy_time::Timer;
-use gpio::{Level, Output};
 
 use sim7020::nonblocking::AsyncModem;
 use sim7020::{at_command, AtError};
 
 use embassy_rp::adc::Adc;
-use embassy_rp::gpio::{Input, Pull};
+use embassy_rp::gpio::{Input, Level, Output, Pull};
 use embassy_rp::peripherals::UART0;
 use embassy_rp::uart::{BufferedInterruptHandler, BufferedUart};
+use sim7020::at_command::cmee::ReportMobileEquipmentErrorSetting;
 use sim7020::at_command::AtResponse;
 
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
@@ -36,7 +36,8 @@ async fn main(spawner: Spawner) -> ! {
     info!("Program start");
     let p = embassy_rp::init(Default::default());
     let mut led = Output::new(p.PIN_25, Level::Low);
-
+    let mut power_pin = Output::new(p.PIN_14, Level::Low);
+    let mut wake_pin = Output::new(p.PIN_17, Level::Low);
     let adc = Adc::new_blocking(p.ADC, Default::default());
 
     let mut interrupt_pin = Input::new(p.PIN_26, Pull::Down);
@@ -54,10 +55,18 @@ async fn main(spawner: Spawner) -> ! {
         &mut rx_buffer,
         Default::default(),
     );
+    info!("resetting modem");
+    power_pin.set_low();
+    led.set_low();
+    Timer::after_millis(500).await;
+    led.set_high();
+    power_pin.set_high();
+    Timer::after_millis(500).await;
+    info!("resetting modem. done");
 
     let (mut reader, mut writer) = uart.split();
 
-    Timer::after_millis(500).await;
+    Timer::after_millis(1000).await;
 
     // reader und writer sind nun async. Heisst
     let mut modem = AsyncModem {
@@ -65,13 +74,15 @@ async fn main(spawner: Spawner) -> ! {
         reader: &mut reader,
     };
 
-    info!("Disable Echo");
     modem
-        .send_and_wait_reply(at_command::ate::AtEcho {
-            status: at_command::ate::Echo::Disable,
-        })
-        .await
-        .unwrap();
+        .verbosity(ReportMobileEquipmentErrorSetting::EnabledVerbose)
+        .await;
+    info!("Disable Echo");
+    Timer::after_millis(500).await;
+
+    modem.disable_echo().await;
+    Timer::after_millis(500).await;
+
     info!("Enter pin");
     modem
         .send_and_wait_reply(at_command::at_cpin::PINRequired {})
@@ -92,7 +103,7 @@ async fn main(spawner: Spawner) -> ! {
         .await
         .unwrap();
 
-    modem
+    let _ = modem
         .send_and_wait_reply(at_command::ntp::StartNTPConnection {
             ip_addr: "202.112.29.82",
         })
