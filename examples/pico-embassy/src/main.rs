@@ -64,12 +64,15 @@ async fn main(spawner: Spawner) -> ! {
         writer: &mut writer,
         reader: &mut reader,
     };
+
+    info!("Disable Echo");
     modem
         .send_and_wait_reply(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
         .await
         .unwrap();
+    info!("Enter pin");
     modem
         .send_and_wait_reply(at_command::at_cpin::PINRequired {})
         .await

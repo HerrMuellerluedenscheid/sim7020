@@ -33,11 +33,13 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
     ) -> Result<AtResponse, crate::AtError> {
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
+        #[cfg(feature = "defmt")]
+        debug!("wrote payload: {=[u8]:a}", &data);
         self.writer.write(data).await.unwrap();
         let response = self.read_response(&mut buffer).await?;
         let response = payload.parse_response(&buffer);
         #[cfg(feature = "defmt")]
-        info!("received response: {}", response);
+        debug!("received response: {}", response);
         response
     }
 

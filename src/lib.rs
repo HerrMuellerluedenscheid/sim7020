@@ -8,6 +8,7 @@ pub mod nonblocking;
 use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
+use at_commands::parser::ParseError;
 use core::ptr::read;
 #[cfg(feature = "defmt")]
 use defmt::*;

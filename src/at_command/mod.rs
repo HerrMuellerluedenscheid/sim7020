@@ -7,14 +7,14 @@ pub mod at_csq;
 pub mod at_cstt;
 pub mod ate;
 pub mod ati;
+pub mod ceer;
 pub mod cgcontrdp;
+pub mod cmee;
 pub mod http;
 pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;
 pub mod ntp;
-pub mod ceer;
-pub mod cmee;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -29,7 +29,7 @@ pub enum AtResponse {
     HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
     PacketDomainAttachmentState(bool),                    // true: attached, false: detached
     SignalQuality(i32, i32),
-    ReportMobileEquipmentErrorSetting(i32)
+    ReportMobileEquipmentErrorSetting(i32),
 }
 
 pub trait AtRequest {

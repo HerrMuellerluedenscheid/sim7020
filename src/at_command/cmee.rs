@@ -1,6 +1,8 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
+
+#[cfg(feature = "defmt")]
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -16,6 +18,7 @@ impl AtRequest for ReportMobileEquipmentError {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        #[cfg(feature = "defmt")]
         info!("error report response: {=[u8]:a}", data);
         let (setting,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CMEE: ")
@@ -35,14 +38,14 @@ impl AtRequest for ReportMobileEquipmentError {
 
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum ReportMobileEquipmentErrorSetting{
+pub enum ReportMobileEquipmentErrorSetting {
     Disabled,
     Enabled,
-    EnabledVerbose
+    EnabledVerbose,
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct WriteReportMobileEquipmentError{
+pub struct WriteReportMobileEquipmentError {
     pub setting: ReportMobileEquipmentErrorSetting,
 }
 
@@ -51,9 +54,9 @@ impl AtRequest for WriteReportMobileEquipmentError {
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let setting = match self.setting {
-            ReportMobileEquipmentErrorSetting::Disabled => {0}
-            ReportMobileEquipmentErrorSetting::Enabled => {1}
-            ReportMobileEquipmentErrorSetting::EnabledVerbose => {2}
+            ReportMobileEquipmentErrorSetting::Disabled => 0,
+            ReportMobileEquipmentErrorSetting::Enabled => 1,
+            ReportMobileEquipmentErrorSetting::EnabledVerbose => 2,
         };
 
         at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -63,6 +66,7 @@ impl AtRequest for WriteReportMobileEquipmentError {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        #[cfg(feature = "defmt")]
         info!("error report response write: {=[u8]:a}", data);
         Ok(AtResponse::Ok)
     }

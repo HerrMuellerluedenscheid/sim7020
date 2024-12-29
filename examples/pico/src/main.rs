@@ -137,14 +137,14 @@ fn main() -> ! {
 
     info!("response: {}", response);
 
-    modem
+    let _ = modem
         .send_and_wait_reply(at_command::ntp::StopNTPConnection {})
         .or_else(|e| {
             warn!("failed stopping ntp connection. Connection already established?");
             return Err(e);
         });
 
-    modem
+    let _ = modem
         .send_and_wait_reply(at_command::ntp::StartNTPConnection {
             ip_addr: "202.112.29.82",
         })
@@ -157,9 +157,9 @@ fn main() -> ! {
         .send_and_wait_reply(at_command::ntp::NTPTime {})
         .unwrap();
 
-    if let Err(e) = test_http_connection(&mut modem) {
-        error!("http test failed");
-    }
+    // if let Err(e) = test_http_connection(&mut modem) {
+    //     error!("http test failed");
+    // }
 
     if let Err(e) = test_mqtt_connection(&mut modem, &mut delay) {
         error!("mqtt test failed");
@@ -268,7 +268,10 @@ where
     info!("created http session: {}", result);
     if let AtResponse::HTTPSessionCreated(client_id) = result {
         // if this errors, most likely the server did not respond
+        info!("connecting:");
         modem.send_and_wait_reply(at_command::http::HttpConnect { client_id })?;
+        info!("sending:");
+
         modem.send_and_wait_reply(at_command::http::HttpSend {
             client_id,
             method: GET,
