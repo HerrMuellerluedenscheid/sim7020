@@ -25,9 +25,22 @@ impl<'a, S> Mqtt<'a, S> {
 }
 
 enum MQTTSessionWrapper{
-    Discconnected()
+    Disconnected(MQTTSession<StateDisconnected>),
+    Connected(MQTTSession<StateConnected>),
 }
 
+impl MQTTSessionWrapper {
+    fn step(mut self) -> Self {
+        match self {
+            MQTTSessionWrapper::Disconnected(session) => {
+                MQTTSessionWrapper::Connected(session.into())
+            },
+            MQTTSessionWrapper::Connected(session) => {
+                MQTTSessionWrapper::Disconnected(session.into())
+            }
+        }
+    }
+}
 
 pub struct MQTTSession<S> {
     state: S,
