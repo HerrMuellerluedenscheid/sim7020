@@ -4,12 +4,12 @@ use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal::spi::Mode;
 use embedded_io_async::{ErrorType, Read, Write};
 
+use crate::at_command::at_creg::AtCregError;
+use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 #[cfg(feature = "defmt")]
 use defmt::*;
 use embedded_io::{Error, ErrorKind};
 use log::error;
-use crate::at_command::at_creg::AtCregError;
-use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 
 pub struct AsyncModem<T: Write, U: Read> {
     pub writer: T,
@@ -30,11 +30,14 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         .await
     }
 
-    pub async fn verbosity(&mut self, verbosity: ReportMobileEquipmentErrorSetting) -> Result<AtResponse, AtError> {
+    pub async fn verbosity(
+        &mut self,
+        verbosity: ReportMobileEquipmentErrorSetting,
+    ) -> Result<AtResponse, AtError> {
         self.send_and_wait_reply(at_command::cmee::WriteReportMobileEquipmentError {
             setting: verbosity,
         })
-            .await
+        .await
     }
 
     pub async fn send_and_wait_reply<V: AtRequest + 'a>(
@@ -46,7 +49,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         #[cfg(feature = "defmt")]
         debug!("payload: {=[u8]:a}", &data);
         self.writer.write(data).await.unwrap();
-        match self.read_response(&mut buffer).await{
+        match self.read_response(&mut buffer).await {
             Ok(response_size) => {
                 #[cfg(feature = "defmt")]
                 debug!("received response: {=[u8]:a}", buffer[..response_size]);
@@ -62,19 +65,17 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
                         debug!("received response: {=[u8]:a}", buffer[..response_size]);
                     }
                     _ => {
-                            #[cfg(feature = "defmt")]
-                            debug!("error: {:?}", at_error);
-                        }
+                        #[cfg(feature = "defmt")]
+                        debug!("error: {:?}", at_error);
                     }
+                }
 
                 Err(at_error)
-
             }
         }
-
     }
 
-    pub async fn read_next_response(&mut self) -> Result<AtResponse, crate::AtError>{
+    pub async fn read_next_response(&mut self) -> Result<AtResponse, crate::AtError> {
         let mut buffer = [0; BUFFER_SIZE];
         #[cfg(feature = "defmt")]
         let response_size = self.read_response(&mut buffer).await?;

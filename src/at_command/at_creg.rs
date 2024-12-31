@@ -29,7 +29,6 @@ impl AtRequest for AtCreg {
     // }
 }
 
-
 // provokes an error for testing purposes
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AtCregError;

@@ -123,13 +123,10 @@ async fn main(spawner: Spawner) -> ! {
         .unwrap();
 
     match modem
-        .send_and_wait_reply(at_command::mqtt::NewMQTTConnection {
-            server: "88.198.226.54",
-            port: 1883,
-            timeout_ms: 5000,
-            buffer_size: 600,
-            context_id: None,
-        })
+        .send_and_wait_reply(at_command::mqtt::MQTTConnectionSettings::new(
+            "88.198.226.54",
+            1883,
+        ))
         .await
     {
         Ok(AtResponse::MQTTSessionCreated(mqtt_id)) => {

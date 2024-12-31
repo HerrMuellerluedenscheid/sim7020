@@ -52,7 +52,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
     pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
         &'b mut self,
-        payload: V,
+        payload: &V,
     ) -> Result<AtResponse, AtError> {
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
