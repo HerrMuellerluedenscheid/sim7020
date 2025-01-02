@@ -1,17 +1,21 @@
+use crate::at_command::mqtt::MQTTSessionWrapper::Disconnected;
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
-use defmt::error;
+use defmt::{error, info, warn};
 use embedded_io::{Read, Write};
 
-
-pub struct Mqtt<'a, S> {
-    connection_settings: MQTTConnectionSettings<'a>,
-    session: MQTTSession<S>,
+enum MQTTError {
+    ConnectionFailed,
 }
 
-impl<'a, S> Mqtt<'a, S> {
+pub struct Mqtt<'a> {
+    connection_settings: MQTTConnectionSettings<'a>,
+    session: MQTTSessionWrapper,
+}
+
+impl<'a> Mqtt<'a> {
     pub fn connect<T: Write, U: Read>(
         &self,
         connection_settings: MQTTConnectionSettings<'a>,
@@ -24,19 +28,29 @@ impl<'a, S> Mqtt<'a, S> {
     }
 }
 
-enum MQTTSessionWrapper{
+enum MQTTSessionWrapper {
     Disconnected(MQTTSession<StateDisconnected>),
     Connected(MQTTSession<StateConnected>),
 }
 
 impl MQTTSessionWrapper {
-    fn step(mut self) -> Self {
+    fn connect<T: Write, U: Read>(
+        self,
+        connection_id: u8,
+        modem: &mut Modem<'_, T, U>,
+        connection_settings: &MQTTConnectionSettings,
+    ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
-            MQTTSessionWrapper::Disconnected(session) => {
-                MQTTSessionWrapper::Connected(session.into())
-            },
-            MQTTSessionWrapper::Connected(session) => {
-                MQTTSessionWrapper::Disconnected(session.into())
+            Disconnected(session) => {
+                let connected_session = session
+                    .connect(modem, connection_settings)
+                    .expect("TODO: panic message");
+                Ok(Self::Connected(connected_session))
+            }
+            _ => {
+                #[cfg(feature = "defmt")]
+                info!("cannot connect when session is not disconnected");
+                Err(MQTTError::ConnectionFailed)
             }
         }
     }
