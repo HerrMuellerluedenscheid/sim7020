@@ -104,24 +104,26 @@ fn main() -> ! {
     // GP14 -> PWR: pull down to shutdown
     // GP17 -> DTR: wake up module
 
-    let mut modem = Modem {
-        writer: &mut writer,
-        reader: &mut reader,
-    };
+    let mut modem = Modem::new(
+        &mut writer,
+        &mut reader,
+    ).unwrap();
+
+    // test AT command
 
     // TODO: move this into modem::new
     modem
-        .send_and_wait_reply(at_command::ate::AtEcho {
+        .send_and_wait_reply(&at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
         .unwrap();
 
     modem
-        .send_and_wait_reply(at_command::at_cpin::PINRequired {})
+        .send_and_wait_reply(&at_command::at_cpin::PINRequired {})
         .expect("TODO: panic message");
 
     let response = modem
-        .send_and_wait_reply(at_command::model_identification::ModelIdentification {})
+        .send_and_wait_reply(&at_command::model_identification::ModelIdentification {})
         .unwrap();
     info!("model id: {}", response);
 
@@ -129,24 +131,24 @@ fn main() -> ! {
     // modem.send_and_wait_reply(at_command::network_information::NetworkInformationAvailable{}).unwrap();
 
     modem
-        .send_and_wait_reply(at_command::at_creg::AtCreg {})
+        .send_and_wait_reply(&at_command::at_creg::AtCreg {})
         .unwrap();
 
     let response = modem
-        .send_and_wait_reply(at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
+        .send_and_wait_reply(&at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
         .unwrap();
 
     info!("response: {}", response);
 
     let _ = modem
-        .send_and_wait_reply(at_command::ntp::StopNTPConnection {})
+        .send_and_wait_reply(&at_command::ntp::StopNTPConnection {})
         .or_else(|e| {
             warn!("failed stopping ntp connection. Connection already established?");
             return Err(e);
         });
 
     let _ = modem
-        .send_and_wait_reply(at_command::ntp::StartNTPConnection {
+        .send_and_wait_reply(&at_command::ntp::StartNTPConnection {
             ip_addr: "202.112.29.82",
         })
         .or_else(|e| {
@@ -155,7 +157,7 @@ fn main() -> ! {
         });
 
     modem
-        .send_and_wait_reply(at_command::ntp::NTPTime {})
+        .send_and_wait_reply(&at_command::ntp::NTPTime {})
         .unwrap();
 
     // if let Err(e) = test_http_connection(&mut modem) {
@@ -185,10 +187,10 @@ fn main() -> ! {
 
     loop {
         modem
-            .send_and_wait_reply(at_command::at_cgatt::GPRSServiceStatus {})
+            .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
         modem
-            .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
+            .send_and_wait_reply(&at_command::at_csq::SignalQualityReport {})
             .unwrap();
         delay.delay_ms(5000);
     }
@@ -208,7 +210,7 @@ where
     ));
 
     let connected = connection.connect(modem)?;
-    connected.disconnect()
+    connected.disconnect();
 
     // modem
     //     .send_and_wait_reply(&at_command::mqtt::CloseMQTTConnection { mqtt_id: 0 })
@@ -266,9 +268,9 @@ where
 {
     // To test this you can start a server e.g. using python with `python3 -m http.server 8000`
     // if this errors, most likely the session count is exhausted (max 4)
-    let _ = modem.send_and_wait_reply(at_command::http::GetHttpSessions {})?;
+    let _ = modem.send_and_wait_reply(&at_command::http::GetHttpSessions {})?;
 
-    let result = modem.send_and_wait_reply(at_command::http::CreateHttpSession {
+    let result = modem.send_and_wait_reply(&at_command::http::CreateHttpSession {
         host: "http://88.198.226.54:8000",
         user: None,
         password: None,
@@ -278,20 +280,20 @@ where
     if let AtResponse::HTTPSessionCreated(client_id) = result {
         // if this errors, most likely the server did not respond
         info!("connecting:");
-        modem.send_and_wait_reply(at_command::http::HttpConnect { client_id })?;
+        modem.send_and_wait_reply(&at_command::http::HttpConnect { client_id })?;
         info!("sending:");
 
-        modem.send_and_wait_reply(at_command::http::HttpSend {
+        modem.send_and_wait_reply(&at_command::http::HttpSend {
             client_id,
             method: GET,
             path: "/hello/world",
         })?;
 
-        let _ = modem.send_and_wait_reply(at_command::http::GetHttpSessions {})?;
+        let _ = modem.send_and_wait_reply(&at_command::http::GetHttpSessions {})?;
 
-        modem.send_and_wait_reply(at_command::http::HttpDisconnect { client_id })?;
+        modem.send_and_wait_reply(&at_command::http::HttpDisconnect { client_id })?;
 
-        modem.send_and_wait_reply(at_command::http::HttpDestroy { client_id })?;
+        modem.send_and_wait_reply(&at_command::http::HttpDestroy { client_id })?;
     }
     Ok(())
 }

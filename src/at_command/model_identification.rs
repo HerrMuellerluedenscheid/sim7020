@@ -1,6 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-#[cfg(defmt)]
+#[cfg(feature = "defmt")]
 use defmt::error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]

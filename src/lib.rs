@@ -35,20 +35,19 @@ pub enum AtError {
 }
 
 impl<'a, T: Write, U: Read> Modem<'a, T, U> {
-    pub fn new(writer: &'a mut T, reader: &'a mut U) -> Self {
+    pub fn new(writer: &'a mut T, reader: &'a mut U) -> Result<Self, AtError> {
         let mut modem = Self { writer, reader };
-        // let modem = modem.disable_echo();  // todo
-        modem
+        modem.disable_echo()?;
+        Ok(modem)
     }
 
-    // fn disable_echo(mut self) -> Self{
-    //     self
-    //         .send_and_wait_reply(at_command::ate::AtEcho {
-    //             status: at_command::ate::Echo::Disable,
-    //         })
-    //         .unwrap();
-    //     self
-    // }
+    fn disable_echo(&mut self) -> Result<(), AtError>{
+        self
+            .send_and_wait_reply(&at_command::ate::AtEcho {
+                status: at_command::ate::Echo::Disable,
+            })?;
+        Ok(())
+    }
 
     pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
         &'b mut self,
