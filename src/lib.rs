@@ -55,16 +55,9 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     ) -> Result<AtResponse, AtError> {
         let mut buffer = [0; BUFFER_SIZE];
         let data = payload.get_command_no_error(&mut buffer);
-        self.writer.write(data).unwrap();
-
-        let response = self.read_response(&mut buffer);
-        if let Err(AtError::ErrorReply(isize)) = response {
-            #[cfg(feature = "defmt")]
-            error!("error message: {=[u8]:a}", &buffer[..isize]);
-            return Err(AtError::ErrorReply(isize));
-        }
-
-        let response = payload.parse_response(&buffer);
+        self.writer.write(data).map_err(|e| AtError::IOError)?;
+        let response_size = self.read_response(&mut buffer)?;
+        let response = payload.parse_response(&buffer[..response_size]);
 
         #[cfg(feature = "defmt")]
         info!("received response: {}", response);
