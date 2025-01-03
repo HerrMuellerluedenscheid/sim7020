@@ -106,7 +106,11 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
                         match &response_out[start..stop] {
                             OK_TERMINATOR => return Ok(offset + i),
-                            ERROR_TERMINATOR => return Err(crate::AtError::ErrorReply(offset + i)),
+                            ERROR_TERMINATOR => {
+                                #[cfg(feature = "defmt")]
+                                error!("{=[u8]:a}", response_out[..offset + i]);
+                                return Err(AtError::ErrorReply(offset + i))
+                            },
                             _ => continue,
                         }
                     }
