@@ -37,6 +37,12 @@ pub enum AtError {
 impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     pub fn new(writer: &'a mut T, reader: &'a mut U) -> Result<Self, AtError> {
         let mut modem = Self { writer, reader };
+        loop {
+            if modem.ready().is_ok() {
+                info!("modem ready");
+                break
+            }
+        }
         modem.disable_echo()?;
         Ok(modem)
     }
@@ -46,6 +52,17 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
             .send_and_wait_reply(&at_command::ate::AtEcho {
                 status: at_command::ate::Echo::Disable,
             })?;
+        Ok(())
+    }
+
+    /// probe the modem's readiness by sending 'AT'. Errors if not ready.
+    pub fn ready(&mut self) -> Result<(), AtError>{
+        #[cfg(feature = "defmt")]
+        info!("probing modem readiness");
+        self
+            .send_and_wait_reply(&at_command::at::At {})?;
+        #[cfg(feature = "defmt")]
+        info!("modem ready");
         Ok(())
     }
 
