@@ -32,6 +32,9 @@ pub enum AtError {
     TooManyReturnedLines,
     ErrorReply(usize),
     CreateHTTPSessionFailed(HttpClient),
+    MqttFailure,
+    NotReady,
+    IOError,
 }
 
 impl<'a, T: Write, U: Read> Modem<'a, T, U> {

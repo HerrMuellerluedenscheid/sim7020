@@ -108,10 +108,7 @@ fn main() -> ! {
         &mut writer,
         &mut reader,
     ).unwrap();
-
-    // test AT command
-
-    // TODO: move this into modem::new
+    
     modem
         .send_and_wait_reply(&at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
