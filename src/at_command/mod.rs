@@ -1,3 +1,5 @@
+#[cfg(feature = "defmt")]
+use defmt::debug;
 use crate::{AtError, BUFFER_SIZE};
 
 pub mod at_cgatt;
@@ -42,6 +44,8 @@ pub trait AtRequest {
     }
 
     fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("default parsing: {=[u8]:a}", _data);
         Ok(AtResponse::Ok)
     }
 }
