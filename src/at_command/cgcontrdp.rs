@@ -17,7 +17,11 @@ impl AtRequest for PDPContextReadDynamicsParameters {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        if let b"\r\nOK\r\n" = &data[0..6] {
+        info!("parse {=[u8]:a}", data);
+        if at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\nOK\r")
+            .finish()
+            .is_ok() {
             #[cfg(feature = "defmt")]
             warn!("return plain ok. No data available, yet");
             return Ok(AtResponse::Ok);
