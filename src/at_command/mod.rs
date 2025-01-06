@@ -17,6 +17,8 @@ pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;
 pub mod ntp;
+pub mod at;
+pub(crate) mod flow_control;
 
 type BufferType = [u8; BUFFER_SIZE];
 
