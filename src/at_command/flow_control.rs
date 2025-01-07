@@ -4,32 +4,37 @@ use at_commands::parser::CommandParser;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-enum FlowControl{
+pub enum FlowControl{
     No,
     Software,
     Hardware
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct SetFlowControl;
+pub struct SetFlowControl{
+    pub(crate) ta_to_te: FlowControl,
+    pub(crate) te_to_ta: FlowControl
+}
+
+impl FlowControl{
+    fn to_int(&self) -> i32{
+        match self {
+            FlowControl::No => {0},
+            FlowControl::Software => {1},
+            FlowControl::Hardware => {2},
+        }
+    }
+}
 
 impl AtRequest for SetFlowControl {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_query(buffer, true)
+        at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+IFC")
+            .with_int_parameter(self.ta_to_te.to_int())
+            .with_int_parameter(self.te_to_ta.to_int())
             .finish()
-    }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (state,) = CommandParser::parse(data)
-            .expect_identifier(b"\r\n+IFC: ")
-            .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()?;
-
-        Ok(AtResponse::Ok)
     }
 }
 
