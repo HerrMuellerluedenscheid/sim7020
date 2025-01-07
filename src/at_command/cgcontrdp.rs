@@ -20,7 +20,8 @@ impl AtRequest for PDPContextReadDynamicsParameters {
         if at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\nOK\r")
             .finish()
-            .is_ok() {
+            .is_ok()
+        {
             #[cfg(feature = "defmt")]
             warn!("return plain ok. No data available, yet");
             return Ok(AtResponse::Ok);

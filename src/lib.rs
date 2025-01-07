@@ -5,6 +5,8 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
+use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
+use crate::at_command::flow_control::FlowControl;
 use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
@@ -12,10 +14,8 @@ use at_commands::parser::ParseError;
 use core::ptr::read;
 #[cfg(feature = "defmt")]
 use defmt::*;
-pub use embedded_io::{ErrorType, Read, Write};
 use embedded_io::{Error, ErrorKind};
-use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
-use crate::at_command::flow_control::FlowControl;
+pub use embedded_io::{ErrorType, Read, Write};
 
 const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
@@ -56,41 +56,42 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     }
 
     /// disable echo if echo is enabled
-    pub fn disable_echo(&mut self) -> Result<(), AtError>{
+    pub fn disable_echo(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("Disable echo");
-        self
-            .send_and_wait_reply(&at_command::ate::AtEcho {
-                status: at_command::ate::Echo::Disable,
-            })?;
+        self.send_and_wait_reply(&at_command::ate::AtEcho {
+            status: at_command::ate::Echo::Disable,
+        })?;
         Ok(())
     }
 
     pub fn enable_numeric_errors(&mut self) -> Result<(), AtError> {
-        self
-            .send_and_wait_reply(&at_command::cmee::SetReportMobileEquipmentError{setting: ReportMobileEquipmentErrorSetting::EnabledVerbose})?;
+        self.send_and_wait_reply(&at_command::cmee::SetReportMobileEquipmentError {
+            setting: ReportMobileEquipmentErrorSetting::EnabledVerbose,
+        })?;
         Ok(())
     }
 
-    pub fn get_flow_control(&mut self) -> Result<(), AtError>{
-        self.send_and_wait_reply(&at_command::flow_control::GetFlowControl {}).expect("TODO: panic message");
+    pub fn get_flow_control(&mut self) -> Result<(), AtError> {
+        self.send_and_wait_reply(&at_command::flow_control::GetFlowControl {})
+            .expect("TODO: panic message");
         Ok(())
     }
 
-    pub fn set_flow_control(&mut self) -> Result<(), AtError>{
-        self.send_and_wait_reply(
-            &at_command::flow_control::SetFlowControl{
-                ta_to_te: FlowControl::Software,
-                te_to_ta: FlowControl::Software }).expect("TODO: panic message");
+    pub fn set_flow_control(&mut self) -> Result<(), AtError> {
+        self.send_and_wait_reply(&at_command::flow_control::SetFlowControl {
+            ta_to_te: FlowControl::Software,
+            te_to_ta: FlowControl::Software,
+        })
+        .expect("TODO: panic message");
         Ok(())
     }
 
-        /// probe the modem's readiness by sending 'AT'. Errors if not ready.
-    pub fn ready(&mut self) -> Result<(), AtError>{
+    /// probe the modem's readiness by sending 'AT'. Errors if not ready.
+    pub fn ready(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("probing modem readiness");
-        self
-            .send_and_wait_reply(&at_command::at::At {})?;
+        self.send_and_wait_reply(&at_command::at::At {})?;
         Ok(())
     }
 
@@ -109,19 +110,27 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
         let response_size = self.read_response(&mut read_buffer)?;
         let response = payload.parse_response(&read_buffer[..response_size]);
         match response {
-            Ok(response) => {Ok(response)},
+            Ok(response) => Ok(response),
             Err(e) => {
                 #[cfg(feature = "defmt")]
-                error!("{}\nparse response failed on request: {=[u8]:a}\n response: {=[u8]:a}", e, &data,  &read_buffer[..response_size]);
-                Ok(AtResponse::Ok{})
+                error!(
+                    "{}\nparse response failed on request: {=[u8]:a}\n response: {=[u8]:a}",
+                    e,
+                    &data,
+                    &read_buffer[..response_size]
+                );
+                Ok(AtResponse::Ok {})
             }
         }
     }
 
-    pub fn read_response(&mut self, response_out: &mut [u8; BUFFER_SIZE]) -> Result<usize, AtError> {
+    pub fn read_response(
+        &mut self,
+        response_out: &mut [u8; BUFFER_SIZE],
+    ) -> Result<usize, AtError> {
         let mut offset = 0_usize;
         let mut read_buffer: [u8; 100] = [0; 100];
-        loop{
+        loop {
             match self.reader.read(&mut read_buffer) {
                 Ok(num_bytes) => {
                     for i in 0..num_bytes {
@@ -137,21 +146,29 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
                         let stop = offset + i + 1;
 
                         match &response_out[start..stop] {
-                            OK_TERMINATOR => return {
-                                #[cfg(feature = "defmt")]
-                                trace!("OK terminated: {=[u8]:a}", response_out[..offset + i + 5]);
-                                Ok(offset + i)
-
-                            },
+                            OK_TERMINATOR => {
+                                return {
+                                    #[cfg(feature = "defmt")]
+                                    trace!(
+                                        "OK terminated: {=[u8]:a}",
+                                        response_out[..offset + i + 5]
+                                    );
+                                    Ok(offset + i)
+                                }
+                            }
                             ERROR_TERMINATOR => {
                                 #[cfg(feature = "defmt")]
-                                error!("received ERROR response: {=[u8]:a}", response_out[..offset + i + 5]);
-                                return Err(AtError::ErrorReply(offset + i))
-                            },
-                            _ => {
+                                error!(
+                                    "received ERROR response: {=[u8]:a}",
+                                    response_out[..offset + i + 5]
+                                );
+                                return Err(AtError::ErrorReply(offset + i));
+                            }
+                            _ =>
+                            {
                                 #[cfg(feature = "defmt")]
                                 continue
-                            },
+                            }
                         }
                     }
 
@@ -161,7 +178,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
                 Err(e) => {
                     #[cfg(feature = "defmt")]
                     error!("uart error {}", e.kind());
-                    return Err(AtError::NotReady)
+                    return Err(AtError::NotReady);
                 }
             }
         }

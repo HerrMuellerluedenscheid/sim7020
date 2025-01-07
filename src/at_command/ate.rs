@@ -17,7 +17,6 @@ pub enum Echo {
     Enable = 1,
 }
 
-
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Clone, Copy)]
 pub struct AtEchoState {}
@@ -30,7 +29,6 @@ impl AtRequest for AtEchoState {
         Ok(command.as_bytes())
     }
 }
-
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Clone, Copy)]

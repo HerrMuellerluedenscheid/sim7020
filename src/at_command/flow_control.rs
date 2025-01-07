@@ -6,24 +6,24 @@ use at_commands::parser::CommandParser;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum FlowControl{
+pub enum FlowControl {
     No,
     Software,
-    Hardware
+    Hardware,
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct SetFlowControl{
+pub struct SetFlowControl {
     pub(crate) ta_to_te: FlowControl,
-    pub(crate) te_to_ta: FlowControl
+    pub(crate) te_to_ta: FlowControl,
 }
 
-impl FlowControl{
-    fn to_int(&self) -> i32{
+impl FlowControl {
+    fn to_int(&self) -> i32 {
         match self {
-            FlowControl::No => {0},
-            FlowControl::Software => {1},
-            FlowControl::Hardware => {2},
+            FlowControl::No => 0,
+            FlowControl::Software => 1,
+            FlowControl::Hardware => 2,
         }
     }
 }

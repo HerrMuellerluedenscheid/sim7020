@@ -1,9 +1,10 @@
-#[cfg(feature = "defmt")]
-use defmt::debug;
-use crate::{AtError, BUFFER_SIZE};
 use crate::at_command::at_cgatt::GPRSServiceState;
 use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
+use crate::{AtError, BUFFER_SIZE};
+#[cfg(feature = "defmt")]
+use defmt::debug;
 
+pub mod at;
 pub mod at_cgatt;
 pub mod at_cpin;
 pub mod at_creg;
@@ -14,13 +15,12 @@ pub mod ati;
 pub mod ceer;
 pub mod cgcontrdp;
 pub mod cmee;
+pub(crate) mod flow_control;
 pub mod http;
 pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;
 pub mod ntp;
-pub mod at;
-pub(crate) mod flow_control;
 
 type BufferType = [u8; BUFFER_SIZE];
 

@@ -1,6 +1,6 @@
-use at_commands::parser::CommandParser;
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+use at_commands::parser::CommandParser;
 #[cfg(feature = "defmt")]
 use defmt::info;
 
@@ -18,7 +18,7 @@ impl From<&str> for NetworkOperator {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum NetworkFormat{
+pub enum NetworkFormat {
     LongAlphanumeric,
     ShortAlphanumeric,
     Numeric,
@@ -46,9 +46,9 @@ pub enum NetworkMode {
 impl From<i32> for NetworkMode {
     fn from(value: i32) -> Self {
         match value {
-            0 => {Self::Automatic },
+            0 => Self::Automatic,
             1 => Self::Manual,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -69,8 +69,7 @@ impl AtRequest for NetworkInformation {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-
-        let (mode, format, operator, _access_technology ) = CommandParser::parse(data)
+        let (mode, format, operator, _access_technology) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+COPS: ")
             .expect_int_parameter()
             .expect_optional_int_parameter()
@@ -78,15 +77,15 @@ impl AtRequest for NetworkInformation {
             .expect_optional_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
-        let mode= NetworkMode::from(mode);
+        let mode = NetworkMode::from(mode);
 
         let format = match format {
-            Some(form) => { NetworkFormat::from(form)}
-            None => {NetworkFormat::Unknown}
+            Some(form) => NetworkFormat::from(form),
+            None => NetworkFormat::Unknown,
         };
         let operator = match operator {
             None => None,
-            Some(o) => Some(NetworkOperator::from(o))
+            Some(o) => Some(NetworkOperator::from(o)),
         };
         #[cfg(feature = "defmt")]
         info!("network information: {:?} | operator: {}", mode, operator);

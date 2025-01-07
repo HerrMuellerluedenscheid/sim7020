@@ -3,7 +3,7 @@ use crate::AtError;
 use at_commands::parser::CommandParser;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum GPRSServiceState{
+pub enum GPRSServiceState {
     Detached, // 0
     Attached, // 1
 }
@@ -30,7 +30,9 @@ impl AtRequest for GPRSServiceStatus {
         let state = match state {
             0 => GPRSServiceState::Attached,
             1 => GPRSServiceState::Detached,
-            _ => {panic!("invalid GPRSServiceStatus")}
+            _ => {
+                panic!("invalid GPRSServiceStatus")
+            }
         };
         Ok(AtResponse::PacketDomainAttachmentState(state))
     }

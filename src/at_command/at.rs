@@ -1,7 +1,7 @@
-#[cfg(feature = "defmt")]
-use defmt::{error, info};
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+#[cfg(feature = "defmt")]
+use defmt::{error, info};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Clone, Copy)]
