@@ -5,6 +5,19 @@ use crate::AtError;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct NetworkOperator([u8; 10]);
+
+impl From<&str> for NetworkOperator {
+    fn from(value: &str) -> Self {
+        let mut data = [0; 10];
+        let vab = value.as_bytes();
+        let len = vab.len().min(data.len());
+        data[..len].copy_from_slice(&vab[..len]);
+        Self(data)
+    }
+}
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum NetworkFormat{
     LongAlphanumeric,
     ShortAlphanumeric,
@@ -24,20 +37,17 @@ impl From<i32> for NetworkFormat {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum NetworkStatus{
-    Unknown,
-    OperatorAvailable,
-    OperatorCurrent,
-    OperatorForbidden
+#[derive(PartialEq, Eq)]
+pub enum NetworkMode {
+    Automatic,
+    Manual,
 }
 
-impl From<i32> for NetworkStatus {
+impl From<i32> for NetworkMode {
     fn from(value: i32) -> Self {
         match value {
-            0 => {Self::Unknown},
-            1 => Self::OperatorAvailable,
-            2 => Self::OperatorCurrent,
-            3 => Self::OperatorForbidden,
+            0 => {Self::Automatic },
+            1 => Self::Manual,
             _ => unreachable!()
         }
     }
@@ -60,7 +70,7 @@ impl AtRequest for NetworkInformation {
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
 
-        let (state, format, operator, _access_technology ) = CommandParser::parse(data)
+        let (mode, format, operator, _access_technology ) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+COPS: ")
             .expect_int_parameter()
             .expect_optional_int_parameter()
@@ -68,14 +78,18 @@ impl AtRequest for NetworkInformation {
             .expect_optional_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
-        let state= NetworkStatus::from(state);
+        let mode= NetworkMode::from(mode);
 
         let format = match format {
             Some(form) => { NetworkFormat::from(form)}
             None => {NetworkFormat::Unknown}
         };
+        let operator = match operator {
+            None => None,
+            Some(o) => Some(NetworkOperator::from(o))
+        };
         #[cfg(feature = "defmt")]
-        info!("network information: {:?} | operator: {}", state, operator);
-        Ok(AtResponse::NetworkInformationState(state, format))
+        info!("network information: {:?} | operator: {}", mode, operator);
+        Ok(AtResponse::NetworkInformationState(mode, format, operator))
     }
 }

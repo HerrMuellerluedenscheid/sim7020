@@ -123,7 +123,7 @@ async fn main(spawner: Spawner) -> ! {
         .unwrap();
 
     match modem
-        .send_and_wait_reply(at_command::mqtt::MQTTConnectionSettings::new(
+        .send_and_wait_reply(at_command::mqtt::MQTTSessionSettings::new(
             "88.198.226.54",
             1883,
         ))
@@ -132,7 +132,7 @@ async fn main(spawner: Spawner) -> ! {
         Ok(AtResponse::MQTTSessionCreated(mqtt_id)) => {
             info!("connected mqtt session {}", mqtt_id);
             modem
-                .send_and_wait_reply(at_command::mqtt::MQTTConnect {
+                .send_and_wait_reply(at_command::mqtt::MQTTConnectionSettings {
                     mqtt_id,
                     version: at_command::mqtt::MQTTVersion::MQTT311,
                     client_id: "sdo92u34oij",

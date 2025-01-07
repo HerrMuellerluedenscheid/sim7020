@@ -34,7 +34,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         &mut self,
         verbosity: ReportMobileEquipmentErrorSetting,
     ) -> Result<AtResponse, AtError> {
-        self.send_and_wait_reply(at_command::cmee::WriteReportMobileEquipmentError {
+        self.send_and_wait_reply(at_command::cmee::SetReportMobileEquipmentError {
             setting: verbosity,
         })
         .await
