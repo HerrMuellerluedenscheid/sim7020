@@ -183,12 +183,14 @@ fn main() -> ! {
     info!("receive loop");
 
     loop {
-        modem
+        let gprs_status = modem
             .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
-        modem
+        info!("gprs status: {}", gprs_status);
+        let signal_quality = modem
             .send_and_wait_reply(&at_command::at_csq::SignalQualityReport {})
             .unwrap();
+        info!("signal quality: {}", signal_quality);
         delay.delay_ms(5000);
     }
 }
