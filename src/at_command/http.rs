@@ -50,8 +50,7 @@ impl AtRequest for GetHttpSessions {
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
-            .finish()
-            .unwrap();
+            .finish()?;
         let (cid0, state0, _, cid1, state1, _, cid2, state2, _, cid3, state3, _) = connections;
         Ok(AtResponse::HttpSessions(
             cid0 as u8,
@@ -92,8 +91,7 @@ impl AtRequest for CreateHttpSession<'_> {
             .expect_identifier(b"\r\n+CHTTPCREATE: ")
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .finish()?;
         Ok(AtResponse::HTTPSessionCreated(client_id as u8))
     }
 }

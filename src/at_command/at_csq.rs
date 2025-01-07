@@ -20,9 +20,8 @@ impl AtRequest for SignalQualityReport {
             .expect_identifier(b"\r\n+CSQ: ")
             .expect_int_parameter()
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
         Ok(AtResponse::SignalQuality(rx_signal_strength, rx_quality))
     }
 }

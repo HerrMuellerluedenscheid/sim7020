@@ -2,6 +2,7 @@ use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 #[cfg(feature = "defmt")]
 use defmt::error;
+use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ModelIdentification {}
@@ -25,8 +26,7 @@ impl AtRequest for ModelIdentification {
                 #[cfg(feature = "defmt")]
                 error!("Failed to parse response: {=[u8]:a}", data);
                 e
-            })
-            .unwrap();
+            })?;
 
         let mut id: [u8; 8] = [0; 8];
         for (i, b) in parsed.as_bytes().iter().enumerate() {

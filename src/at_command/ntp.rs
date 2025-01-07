@@ -3,11 +3,11 @@ use crate::AtError;
 use chrono::NaiveDateTime;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct StartNTPConnection<'a> {
+pub struct StartQueryNTP<'a> {
     pub ip_addr: &'a str,
 }
 
-impl AtRequest for StartNTPConnection<'_> {
+impl AtRequest for StartQueryNTP<'_> {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
@@ -19,9 +19,9 @@ impl AtRequest for StartNTPConnection<'_> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct StopNTPConnection;
+pub struct StopQueryNTP;
 
-impl AtRequest for StopNTPConnection {
+impl AtRequest for StopQueryNTP {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {

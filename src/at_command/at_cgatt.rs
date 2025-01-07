@@ -25,8 +25,7 @@ impl AtRequest for GPRSServiceStatus {
             .expect_identifier(b"\r\n+CGATT: ")
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
-            .finish()
-            .unwrap();
+            .finish()?;
 
         let state = match state {
             0 => GPRSServiceState::Attached,

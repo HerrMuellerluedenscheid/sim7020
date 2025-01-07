@@ -12,12 +12,12 @@ use core::fmt::Debug;
 use defmt::*;
 use embedded_hal::digital::OutputPin;
 use panic_probe as _;
-use sim7020::at_command;
 use sim7020::at_command::http::HttpMethod::GET;
 use sim7020::at_command::AtResponse;
 use sim7020::AtError;
 use sim7020::Modem;
-use sim7020::{Read, Write};
+use sim7020::Write;
+use sim7020::{at_command, Read};
 
 use fugit::RateExtU32;
 // Provide an alias for our BSP so we can switch targets quickly.
@@ -35,12 +35,17 @@ use bsp::hal::{
     Clock,
 };
 use cortex_m::asm::delay;
-use cortex_m::prelude::{_embedded_hal_blocking_delay_DelayMs, _embedded_hal_serial_Read};
+use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
+use cortex_m::prelude::_embedded_hal_blocking_i2c_Read;
+
 use rp_pico::hal::gpio::bank0::{Gpio0, Gpio1};
 use rp_pico::hal::gpio::{Pin, PullDown};
-use rp_pico::hal::uart::{Reader, Writer};
+// use rp_pico::hal::uart::{ReadErrorType, Reader, Writer};
 use rp_pico::pac::UART0;
-use sim7020::at_command::mqtt::{MQTTConnect, MQTTConnection, MQTTConnectionSettings};
+use sim7020::at_command::mqtt::{
+    MQTTConnectionSettings, MQTTError, MQTTSessionSettings, MQTTVersion, Mqtt,
+};
+use sim7020::at_command::network_information::NetworkMode;
 
 const XOSC_CRYSTAL_FREQ: u32 = 12_000_000; // Typically found in BSP crates
 #[entry]
@@ -94,38 +99,35 @@ fn main() -> ! {
     // Need to perform clock init before using UART or it will freeze.
     let uart = UartPeripheral::new(pac.UART0, pins_uart, &mut pac.RESETS)
         .enable(
-            UartConfig::new(9600.Hz(), DataBits::Eight, None, StopBits::One),
+            UartConfig::new(9600.Hz(), DataBits::Seven, None, StopBits::One),
             clocks.peripheral_clock.freq(),
         )
         .unwrap();
+
     let (mut reader, mut writer) = uart.split();
 
-    let mut power_pin = pins.gpio14.into_push_pull_output();
-    let mut wake_pin = pins.gpio17.into_push_pull_output();
-    let mut led_pin = pins.led.into_push_pull_output();
+    let mut modem = Modem::new(&mut writer, &mut reader).unwrap();
 
-    info!("resetting modem");
-    power_pin.set_low().unwrap();
-    led_pin.set_low().unwrap();
-    delay.delay_ms(1000);
-    led_pin.set_high().unwrap();
-    power_pin.set_high().unwrap();
-    delay.delay_ms(10000);
+    modem.set_flow_control().unwrap();
+    modem.enable_numeric_errors().unwrap();
+    'outer: loop {
+        info!("waiting for operator");
+        let network_information = modem
+            .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
+            .unwrap();
+        match network_information {
+            AtResponse::NetworkInformationState(_, _, operator) => {
+                if let Some(operator) = operator {
+                    info!("operator available: {:?}", operator);
+                    break 'outer;
+                }
+            }
+            _ => continue,
+        }
+        delay.delay_ms(1000);
+    }
 
-    // pico-sim7020E-NB-IOT specific
-    // GP14 -> PWR: pull down to shutdown
-    // GP17 -> DTR: wake up module
-
-    let mut modem = Modem::new(
-        &mut writer,
-        &mut reader,
-    ).unwrap();
-    
-    modem
-        .send_and_wait_reply(&at_command::ate::AtEcho {
-            status: at_command::ate::Echo::Disable,
-        })
-        .unwrap();
+    delay.delay_ms(2000);
 
     modem
         .send_and_wait_reply(&at_command::at_cpin::PINRequired {})
@@ -135,9 +137,6 @@ fn main() -> ! {
         .send_and_wait_reply(&at_command::model_identification::ModelIdentification {})
         .unwrap();
     info!("model id: {}", response);
-
-    // todo: this blocks completely
-    // modem.send_and_wait_reply(at_command::network_information::NetworkInformationAvailable{}).unwrap();
 
     modem
         .send_and_wait_reply(&at_command::at_creg::AtCreg {})
@@ -150,18 +149,18 @@ fn main() -> ! {
     info!("response: {}", response);
 
     let _ = modem
-        .send_and_wait_reply(&at_command::ntp::StopNTPConnection {})
-        .or_else(|e| {
-            warn!("failed stopping ntp connection. Connection already established?");
-            return Err(e);
-        });
-
-    let _ = modem
-        .send_and_wait_reply(&at_command::ntp::StartNTPConnection {
+        .send_and_wait_reply(&at_command::ntp::StartQueryNTP {
             ip_addr: "202.112.29.82",
         })
         .or_else(|e| {
             warn!("failed starting ntp connection. Connection already established?");
+            return Err(e);
+        });
+    delay.delay_ms(2000);
+    let _ = modem
+        .send_and_wait_reply(&at_command::ntp::StopQueryNTP {})
+        .or_else(|e| {
+            warn!("failed stopping ntp connection. Connection already established?");
             return Err(e);
         });
 
@@ -172,10 +171,13 @@ fn main() -> ! {
     // if let Err(e) = test_http_connection(&mut modem) {
     //     error!("http test failed");
     // }
+    delay.delay_ms(2000);
 
-    if let Err(e) = test_mqtt_connection(&mut modem, &mut delay) {
-        error!("mqtt test failed");
-    }
+    modem
+        .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
+        .unwrap();
+
+    test_mqtt_connection(&mut modem, &mut delay).unwrap();
     delay.delay_ms(2000);
 
     // Setting the APN fails:
@@ -208,20 +210,58 @@ fn main() -> ! {
 }
 
 fn test_mqtt_connection<T, U>(
-    modem: &mut Modem<T, U>,
+    mut modem: &mut Modem<T, U>,
     delay: &mut cortex_m::delay::Delay,
 ) -> Result<(), AtError>
 where
     T: Write,
     U: Read,
 {
-    let mut connection = MQTTConnection::new(MQTTConnectionSettings::new(
-        "88.198.226.54",
-        1883,
-    ));
+    let mut connection = MQTTSessionSettings::new("88.198.226.54", 1883);
+    let mqtt = Mqtt::new(connection);
+    let mqtt_session = mqtt
+        .create_session(&mut modem)
+        .map_err(|_| AtError::MqttFailure)?;
+    let mqtt_connection = mqtt_session
+        .connect(
+            &MQTTConnectionSettings {
+                mqtt_id: 0,
+                version: MQTTVersion::MQTT31,
+                client_id: "0",
+                keepalive_interval: 0,
+                clean_session: false,
+                will_flag: false,
+                username: "marius",
+                password: "Haufenhistory",
+            },
+            &mut modem,
+        )
+        .unwrap();
+    loop {
+        delay.delay_ms(1000);
+        match mqtt_connection.publish(
+            &at_command::mqtt::MQTTMessage {
+                topic: "test",                    // length max 128b
+                qos: 1,                           // 0 | 1 | 2
+                retained: false,                  // 0 | 1
+                dup: false,                       // 0 | 1
+                message: b"hello world via mqtt", // as hex
+            },
+            &mut modem,
+        ) {
+            Ok(..) => {
+                info!("sent message")
+            }
+            Err(e) => {
+                warn!("failed to sent message: {:?}", e);
+                continue;
+            }
+        };
+    }
 
-    let connected = connection.connect(modem)?;
-    connected.disconnect();
+    // connected_mqtt.
+    // let connected = connection.connect(modem)?;
+    // connected.disconnect();
 
     // modem
     //     .send_and_wait_reply(&at_command::mqtt::CloseMQTTConnection { mqtt_id: 0 })
@@ -308,5 +348,3 @@ where
     }
     Ok(())
 }
-
-// End of file

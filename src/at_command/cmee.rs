@@ -23,8 +23,7 @@ impl AtRequest for ReportMobileEquipmentError {
             .expect_identifier(b"\r\n+CMEE: ")
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .finish()?;
         // let setting = match setting {
         //     0 => ReportMobileEquipmentErrorSetting::Disabled,
         //     1 => ReportMobileEquipmentErrorSetting::Enabled,
@@ -39,22 +38,22 @@ impl AtRequest for ReportMobileEquipmentError {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ReportMobileEquipmentErrorSetting {
     Disabled,
-    Enabled,
+    Numeric,
     EnabledVerbose,
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct WriteReportMobileEquipmentError {
+pub struct SetReportMobileEquipmentError {
     pub setting: ReportMobileEquipmentErrorSetting,
 }
 
-impl AtRequest for WriteReportMobileEquipmentError {
+impl AtRequest for SetReportMobileEquipmentError {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let setting = match self.setting {
             ReportMobileEquipmentErrorSetting::Disabled => 0,
-            ReportMobileEquipmentErrorSetting::Enabled => 1,
+            ReportMobileEquipmentErrorSetting::Numeric => 1,
             ReportMobileEquipmentErrorSetting::EnabledVerbose => 2,
         };
 

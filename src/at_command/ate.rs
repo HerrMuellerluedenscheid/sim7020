@@ -1,5 +1,13 @@
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Clone, Copy)]
+#[repr(u8)]
+pub enum EchoState {
+    Disabled,
+    Enabled,
+}
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Clone, Copy)]
@@ -8,6 +16,21 @@ pub enum Echo {
     Disable = 0,
     Enable = 1,
 }
+
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Clone, Copy)]
+pub struct AtEchoState {}
+
+impl AtRequest for AtEchoState {
+    type Response = Result<(), AtError>;
+
+    fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        let command = "ATE?\r\n";
+        Ok(command.as_bytes())
+    }
+}
+
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Clone, Copy)]

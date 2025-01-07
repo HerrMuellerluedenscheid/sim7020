@@ -9,7 +9,7 @@ impl AtRequest for PINRequired {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_test(buffer, true)
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CPIN")
             .finish()
     }

@@ -101,7 +101,7 @@ async fn main(spawner: Spawner) -> ! {
         .unwrap();
 
     let _ = modem
-        .send_and_wait_reply(at_command::ntp::StartNTPConnection {
+        .send_and_wait_reply(at_command::ntp::StartQueryNTP {
             ip_addr: "202.112.29.82",
         })
         .await
@@ -201,24 +201,5 @@ async fn main(spawner: Spawner) -> ! {
             .send_and_wait_reply(at_command::at_csq::SignalQualityReport {})
             .await
             .unwrap();
-        // Timer::after_millis(3000).await;
-        // match modem.reader.read() {
-        //     Ok(13) => {
-        //         index = 0;
-        //         buffer = [0; BUFFER_SIZE];
-        //     }
-        //     Ok(byte) => {
-        //         buffer[index] = byte;
-        //         index += 1;
-        //         if index == BUFFER_SIZE - 1 {
-        //             error!("BUFFER_SIZE was not large enough")
-        //         }
-        //     }
-        //     Err(e) => {
-        //         // error!("no data")
-        //     }
-        // }
     }
 }
-
-// End of file
