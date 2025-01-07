@@ -11,7 +11,6 @@ impl AtRequest for StartNTPConnection<'_> {
     type Response = Result<(), AtError>;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        // todo fix hard coded ip
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSNTPSTART")
             .with_string_parameter(self.ip_addr)
@@ -48,8 +47,7 @@ impl AtRequest for NTPTime {
             .expect_identifier(b"\r\n+CCLK: ")
             .expect_raw_string()
             .expect_identifier(b"\r\n\r\nOK")
-            .finish()
-            .unwrap();
+            .finish()?;
         // 00/01/01,00:07:50+32  // +32 means east according to datasheet. Need to understand how to interpret
         // these zone infos
         let timestamp = NaiveDateTime::parse_from_str(&parsed[..17], "%y/%m/%d,%H:%M:%S").unwrap();
