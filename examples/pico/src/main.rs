@@ -73,6 +73,18 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
+    info!("resetting modem");
+    let mut power_pin = pins.gpio14.into_push_pull_output();
+    let mut wake_pin = pins.gpio17.into_push_pull_output();
+    let mut led_pin = pins.led.into_push_pull_output();
+    power_pin.set_low().unwrap();
+    led_pin.set_low().unwrap();
+    delay.delay_ms(500);
+    led_pin.set_high().unwrap();
+    power_pin.set_high().unwrap();
+    delay.delay_ms(3000);
+    info!("resetting modem... done");
+
     // Set up UART on GP0 and GP1 (Pico pins 1 and 2)
     let pins_uart = (
         pins.gpio0.into_function::<FunctionUart>(),
