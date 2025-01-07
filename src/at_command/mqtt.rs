@@ -14,54 +14,120 @@ pub enum MQTTError {
 }
 
 pub struct Mqtt<'a> {
-    session_settings: MQTTSessionSettings<'a>,
+    session_settings: &'a MQTTSessionSettings<'a>,
     session_wrapper: MQTTSessionWrapper,
 }
 
 impl<'a> Mqtt<'a> {
-
-    pub fn new(session_settings: MQTTSessionSettings<'a>) -> Self {
+    pub fn new(session_settings: &'a MQTTSessionSettings<'a>) -> Self {
         let session_wrapper = Disconnected(MQTTSession::new());
-        Self { session_settings, session_wrapper }
+        Self {
+            session_settings,
+            session_wrapper,
+        }
     }
     pub fn create_session<T: Write, U: Read>(
         self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<Self, MQTTError> {
-        let session_wrapper = self.session_wrapper.create_session(modem, &self.session_settings)?;
-        Ok(Self{session_settings: self.session_settings, session_wrapper})
+        let session_wrapper = self
+            .session_wrapper
+            .create_session(modem, &self.session_settings)?;
+        Ok(Self {
+            session_settings: self.session_settings,
+            session_wrapper,
+        })
     }
 
     pub fn connect<T: Write, U: Read>(
         self,
         connection_settings: &MQTTConnectionSettings,
         modem: &mut Modem<'_, T, U>,
-    ) -> Result<MQTTConnection, MQTTError> {
-        match self.session_wrapper{
+    ) -> Result<Self, MQTTError> {
+        let session_wrapper = self.session_wrapper.connect(modem, connection_settings)?;
+        Ok(Self {
+            session_settings: self.session_settings,
+            session_wrapper,
+        })
+    }
+
+    pub fn disconnect<T: Write, U: Read>(
+        self,
+        modem: &mut Modem<'_, T, U>,
+    ) -> Result<Self, MQTTError> {
+        match self.session_wrapper {
             Disconnected(_) => Err(MQTTError::Disconnected),
             MQTTSessionWrapper::Connected(session) => {
-                Ok(session.connect(modem, &connection_settings).expect("connect failed"))
+                let session = session.disconnect(modem).expect("connect failed");
+                let session_wrapper = Disconnected(session);
+                Ok(Self {
+                    session_settings: self.session_settings,
+                    session_wrapper,
+                })
+            }
+            MQTTSessionWrapper::ConnectedGood(session) => {
+                let session = session.disconnect(modem).expect("connect failed");
+                let session_wrapper = Disconnected(session);
+                Ok(Self {
+                    session_settings: self.session_settings,
+                    session_wrapper,
+                })
             }
         }
+    }
+
+    pub fn publish<T, U>(
+        &self,
+        message: &MQTTMessage,
+        p1: &mut Modem<T, U>,
+    ) -> Result<(), MQTTError>
+    where
+        T: Write,
+        U: Read,
+    {
+        self.session_wrapper.publish(message, p1)
     }
 }
 
 enum MQTTSessionWrapper {
     Disconnected(MQTTSession<StateDisconnected>),
     Connected(MQTTSession<StateConnected>),
+    ConnectedGood(MQTTSession<StateConnectedGood>),
 }
 
 impl MQTTSessionWrapper {
     fn create_session<T: Write, U: Read>(
         self,
         modem: &mut Modem<'_, T, U>,
-        connection_settings: &MQTTSessionSettings,
+        session_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
-            Disconnected(session) => {
-                match session
-                    .create_session(modem, connection_settings){
-                    Ok(session) => Ok(Self::Connected(session)),
+            Disconnected(session) => match session.create_session(modem, session_settings) {
+                Ok(session) => Ok(Self::Connected(session)),
+                Err(err) => {
+                    #[cfg(feature = "defmt")]
+                    error!("{:?}", err);
+                    Err(MQTTError::Disconnected)
+                }
+            },
+            _ => {
+                #[cfg(feature = "defmt")]
+                info!("already connected");
+                Ok(self)
+            }
+        }
+    }
+
+    fn connect<T: Write, U: Read>(
+        self,
+        modem: &mut Modem<'_, T, U>,
+        connection_settings: &MQTTConnectionSettings,
+    ) -> Result<MQTTSessionWrapper, MQTTError> {
+        match self {
+            Disconnected(_) => Err(MQTTError::Disconnected),
+            MQTTSessionWrapper::Connected(session) => {
+                match session.connect(modem, connection_settings) {
+                    Ok(session) => Ok(Self::ConnectedGood(session)),
                     Err(err) => {
                         #[cfg(feature = "defmt")]
                         error!("{:?}", err);
@@ -76,6 +142,21 @@ impl MQTTSessionWrapper {
             }
         }
     }
+
+    pub(crate) fn publish<T: Write, U: Read>(
+        &self,
+        p0: &MQTTMessage,
+        p1: &mut Modem<'_, T, U>,
+    ) -> Result<(), MQTTError> {
+        match self {
+            Disconnected(_) => Err(MQTTError::Disconnected),
+            MQTTSessionWrapper::Connected(_) => Err(MQTTError::Disconnected), // should be state where session established but not connected
+            MQTTSessionWrapper::ConnectedGood(session) => {
+                session.publish(p0, p1)?;
+                Ok(())
+            }
+        }
+    }
 }
 
 pub struct MQTTSession<S> {
@@ -85,6 +166,10 @@ pub struct MQTTSession<S> {
 struct StateDisconnected {}
 
 struct StateConnected {
+    mqtt_connection_id: u8,
+}
+
+struct StateConnectedGood {
     mqtt_connection_id: u8,
 }
 
@@ -118,7 +203,7 @@ impl<'a> MQTTSession<StateDisconnected> {
 
 impl<'a> MQTTSession<StateConnected> {
     pub fn disconnect<T: Write, U: Read>(
-        &mut self,
+        &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
         modem
@@ -135,27 +220,61 @@ impl<'a> MQTTSession<StateConnected> {
         self,
         modem: &mut Modem<'_, T, U>,
         connection_settings: &MQTTConnectionSettings,
-    ) -> Result<MQTTConnection, AtError> {
-        let mqtt_id = self.state.mqtt_connection_id;
+    ) -> Result<MQTTSession<StateConnectedGood>, AtError> {
+        let mqtt_connection_id = self.state.mqtt_connection_id;
 
         match modem.send_and_wait_reply(connection_settings) {
-            Ok(response) => {
-                match response {
-                    AtResponse::Ok => Ok(MQTTConnection::Connected(mqtt_id)),
-                    _ => {
-                        #[cfg(feature = "defmt")]
-                        error!("unexpected response from mqtt modem: {:?}", response);
-                        Err(AtError::ErrorReply(0))
-                    }
+            Ok(response) => match response {
+                AtResponse::Ok => Ok(MQTTSession {
+                    state: StateConnectedGood { mqtt_connection_id },
+                }),
+                _ => {
+                    #[cfg(feature = "defmt")]
+                    error!("unexpected response from mqtt modem: {:?}", response);
+                    Err(AtError::ErrorReply(0))
                 }
-            }
+            },
             Err(e) => Err(e),
         }
     }
 }
 
+impl<'a> MQTTSession<StateConnectedGood> {
+    fn disconnect<T: Write, U: Read>(
+        &self,
+        modem: &mut Modem<'_, T, U>,
+    ) -> Result<MQTTSession<StateDisconnected>, AtError> {
+        modem
+            .send_and_wait_reply(&CloseMQTTConnection {
+                mqtt_id: self.state.mqtt_connection_id,
+            })
+            .expect("TODO: panic message");
+        Ok(MQTTSession {
+            state: StateDisconnected {},
+        })
+    }
+
+    fn publish<T: Write, U: Read>(
+        &self,
+        message: &MQTTMessage,
+        modem: &mut Modem<'_, T, U>,
+    ) -> Result<(), MQTTError> {
+        modem
+            .send_and_wait_reply(&MQTTPublish {
+                mqtt_id: self.state.mqtt_connection_id,
+                topic: message.topic,
+                qos: message.qos,
+                retained: message.retained,
+                dup: message.dup,
+                message: message.message,
+            })
+            .map_err(|_| MQTTError::Publish)?;
+        Ok(())
+    }
+}
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum MQTTConnection{
+pub enum MQTTConnection {
     Connected(u8),
     Disconnected,
 }
@@ -166,17 +285,18 @@ impl MQTTConnection {
         message: &MQTTMessage,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<(), MQTTError> {
-        match self{
+        match self {
             MQTTConnection::Disconnected => Err(MQTTError::Disconnected),
             MQTTConnection::Connected(mqtt_connection_id) => {
-                modem.send_and_wait_reply(
-                    &MQTTPublish {
+                modem
+                    .send_and_wait_reply(&MQTTPublish {
                         mqtt_id: *mqtt_connection_id,
                         topic: message.topic,
                         qos: message.qos,
                         retained: message.retained,
                         dup: message.dup,
-                        message: message.message })
+                        message: message.message,
+                    })
                     .map_err(|_| MQTTError::Publish)?;
                 Ok(())
             }
@@ -350,7 +470,6 @@ pub struct MQTTMessage<'a> {
     pub dup: bool,         // 0 | 1
     pub message: &'a [u8], // as hex
 }
-
 
 /// Publish a message via mqtt
 ///
