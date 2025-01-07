@@ -6,25 +6,43 @@ use at_commands::builder::CommandBuilder;
 use defmt::{error, info, warn};
 use embedded_io::{Read, Write};
 
-enum MQTTError {
+#[cfg_attr(feature = "defmt", derive(defmt::Format, Debug))]
+pub enum MQTTError {
     ConnectionFailed,
+    Disconnected,
+    Publish,
 }
 
 pub struct Mqtt<'a> {
-    connection_settings: MQTTConnectionSettings<'a>,
-    session: MQTTSessionWrapper,
+    session_settings: MQTTSessionSettings<'a>,
+    session_wrapper: MQTTSessionWrapper,
 }
 
 impl<'a> Mqtt<'a> {
-    pub fn connect<T: Write, U: Read>(
-        &self,
-        connection_settings: MQTTConnectionSettings<'a>,
+
+    pub fn new(session_settings: MQTTSessionSettings<'a>) -> Self {
+        let session_wrapper = Disconnected(MQTTSession::new());
+        Self { session_settings, session_wrapper }
+    }
+    pub fn create_session<T: Write, U: Read>(
+        self,
         modem: &mut Modem<'_, T, U>,
-    ) {
-        let session = MQTTSession::new();
-        let connected_session = session
-            .connect(modem, &self.connection_settings)
-            .expect("TODO: panic message");
+    ) -> Result<Self, MQTTError> {
+        let session_wrapper = self.session_wrapper.create_session(modem, &self.session_settings)?;
+        Ok(Self{session_settings: self.session_settings, session_wrapper})
+    }
+
+    pub fn connect<T: Write, U: Read>(
+        self,
+        connection_settings: &MQTTConnectionSettings,
+        modem: &mut Modem<'_, T, U>,
+    ) -> Result<MQTTConnection, MQTTError> {
+        match self.session_wrapper{
+            Disconnected(_) => Err(MQTTError::Disconnected),
+            MQTTSessionWrapper::Connected(session) => {
+                Ok(session.connect(modem, &connection_settings).expect("connect failed"))
+            }
+        }
     }
 }
 
@@ -34,23 +52,27 @@ enum MQTTSessionWrapper {
 }
 
 impl MQTTSessionWrapper {
-    fn connect<T: Write, U: Read>(
+    fn create_session<T: Write, U: Read>(
         self,
-        connection_id: u8,
         modem: &mut Modem<'_, T, U>,
-        connection_settings: &MQTTConnectionSettings,
+        connection_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
             Disconnected(session) => {
-                let connected_session = session
-                    .connect(modem, connection_settings)
-                    .expect("TODO: panic message");
-                Ok(Self::Connected(connected_session))
+                match session
+                    .create_session(modem, connection_settings){
+                    Ok(session) => Ok(Self::Connected(session)),
+                    Err(err) => {
+                        #[cfg(feature = "defmt")]
+                        error!("{:?}", err);
+                        Err(MQTTError::Disconnected)
+                    }
+                }
             }
             _ => {
                 #[cfg(feature = "defmt")]
-                info!("cannot connect when session is not disconnected");
-                Err(MQTTError::ConnectionFailed)
+                info!("already connected");
+                Ok(self)
             }
         }
     }
@@ -73,12 +95,13 @@ impl<'a> MQTTSession<StateDisconnected> {
         }
     }
 
-    pub fn connect<T: Write, U: Read>(
+    pub fn create_session<T: Write, U: Read>(
         self,
         modem: &mut Modem<'_, T, U>,
-        connection_settings: &MQTTConnectionSettings,
+        session_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSession<StateConnected>, AtError> {
-        match modem.send_and_wait_reply(connection_settings) {
+        info!("Creating new session");
+        match modem.send_and_wait_reply(session_settings) {
             Ok(AtResponse::MQTTSessionCreated(mqtt_connection_id)) => Ok(MQTTSession {
                 state: StateConnected { mqtt_connection_id },
             }),
@@ -106,11 +129,63 @@ impl<'a> MQTTSession<StateConnected> {
             state: StateDisconnected {},
         })
     }
+
+    pub fn connect<T: Write, U: Read>(
+        self,
+        modem: &mut Modem<'_, T, U>,
+        connection_settings: &MQTTConnectionSettings,
+    ) -> Result<MQTTConnection, AtError> {
+        let mqtt_id = self.state.mqtt_connection_id;
+
+        match modem.send_and_wait_reply(connection_settings) {
+            Ok(response) => {
+                match response {
+                    AtResponse::Ok => Ok(MQTTConnection::Connected(mqtt_id)),
+                    _ => {
+                        #[cfg(feature = "defmt")]
+                        error!("unexpected response from mqtt modem: {:?}", response);
+                        Err(AtError::ErrorReply(0))
+                    }
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+}
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum MQTTConnection{
+    Connected(u8),
+    Disconnected,
+}
+
+impl MQTTConnection {
+    pub fn publish<T: Write, U: Read>(
+        &self,
+        message: &MQTTMessage,
+        modem: &mut Modem<'_, T, U>,
+    ) -> Result<(), MQTTError> {
+        match self{
+            MQTTConnection::Disconnected => Err(MQTTError::Disconnected),
+            MQTTConnection::Connected(mqtt_connection_id) => {
+                modem.send_and_wait_reply(
+                    &MQTTPublish {
+                        mqtt_id: *mqtt_connection_id,
+                        topic: message.topic,
+                        qos: message.qos,
+                        retained: message.retained,
+                        dup: message.dup,
+                        message: message.message })
+                    .map_err(|_| MQTTError::Publish)?;
+                Ok(())
+            }
+        }
+    }
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 /// Create a new MQTT connection
-pub struct MQTTConnectionSettings<'a> {
+pub struct MQTTSessionSettings<'a> {
     pub server: &'a str,
     pub port: u16,               // 0 - 65535
     pub timeout_ms: u16,         // 0 - 60.000
@@ -118,11 +193,11 @@ pub struct MQTTConnectionSettings<'a> {
     pub context_id: Option<u16>, // PDP context, AT+CGAT response
 }
 
-impl MQTTConnectionSettings<'_> {
-    pub fn new(server: &str, port: u16) -> MQTTConnectionSettings {
+impl MQTTSessionSettings<'_> {
+    pub fn new(server: &str, port: u16) -> MQTTSessionSettings {
         let timeout_ms = 5000;
         let buffer_size = 600;
-        MQTTConnectionSettings {
+        MQTTSessionSettings {
             server,
             port,
             timeout_ms,
@@ -147,7 +222,7 @@ impl MQTTConnectionSettings<'_> {
     }
 }
 
-impl AtRequest for MQTTConnectionSettings<'_> {
+impl AtRequest for MQTTSessionSettings<'_> {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
@@ -165,9 +240,8 @@ impl AtRequest for MQTTConnectionSettings<'_> {
         let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CMQNEW: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
 
         Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
     }
@@ -182,7 +256,6 @@ impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        // todo fix hard coded client id
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
             .with_int_parameter(self.mqtt_id)
@@ -204,7 +277,7 @@ pub struct WillOptions<'a> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct MQTTConnect<'a> {
+pub struct MQTTConnectionSettings<'a> {
     pub mqtt_id: u8,
     pub version: MQTTVersion,
     pub client_id: &'a str,
@@ -216,7 +289,7 @@ pub struct MQTTConnect<'a> {
     pub password: &'a str,
 }
 
-impl AtRequest for MQTTConnect<'_> {
+impl AtRequest for MQTTConnectionSettings<'_> {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
@@ -264,6 +337,19 @@ impl AtRequest for MQTTRawData {
             .finish()
     }
 }
+
+/// Publish a message via mqtt
+///
+/// The message length has to be between 2 and 1000 byte.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct MQTTMessage<'a> {
+    pub topic: &'a str,    // length max 128b
+    pub qos: u8,           // 0 | 1 | 2
+    pub retained: bool,    // 0 | 1
+    pub dup: bool,         // 0 | 1
+    pub message: &'a [u8], // as hex
+}
+
 
 /// Publish a message via mqtt
 ///
