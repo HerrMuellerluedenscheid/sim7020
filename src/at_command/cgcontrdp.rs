@@ -33,9 +33,8 @@ impl AtRequest for PDPContextReadDynamicsParameters {
             .expect_int_parameter()
             .expect_string_parameter()
             .expect_string_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .expect_identifier(b"\r\n\r\nOK\r")
+            .finish()?;
         Ok(AtResponse::PDPContextDynamicParameters(
             cid as u8,
             bearer_id as u8,

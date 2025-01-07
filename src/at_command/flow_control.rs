@@ -27,8 +27,7 @@ impl AtRequest for SetFlowControl {
             .expect_identifier(b"\r\n+IFC: ")
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()
-            .unwrap();
+            .finish()?;
 
         Ok(AtResponse::Ok)
     }
@@ -52,13 +51,12 @@ impl AtRequest for GetFlowControl {
     ///             from TE
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let (dce_by_dte, dte_by_dce, ra) = CommandParser::parse(data)
-            .expect_optional_identifier(b"AT+IFC?\r\r\n")
-            .expect_identifier(b"+IFC: ")
+            .expect_optional_identifier(b"AT+IFC?\r")
+            .expect_identifier(b"\r\n+IFC: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
-            .finish()
-            .unwrap();
+            .finish()?;
         let dce_by_dte = match dce_by_dte {
             0 => FlowControl::No,
             1 => FlowControl::Software,
