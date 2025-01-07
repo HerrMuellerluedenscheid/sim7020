@@ -47,7 +47,7 @@ impl AtRequest for NTPTime {
         let (parsed,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CCLK: ")
             .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .expect_identifier(b"\r\n\r\nOK")
             .finish()
             .unwrap();
         // 00/01/01,00:07:50+32  // +32 means east according to datasheet. Need to understand how to interpret

@@ -31,7 +31,7 @@ pub enum AtResponse {
     MQTTSessionCreated(u8),                               // client_id
     HTTPSessionCreated(u8),                               // client_id
     HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
-    PacketDomainAttachmentState(bool),                    // true: attached, false: detached
+    PacketDomainAttachmentState(GPRSServiceState),
     SignalQuality(i32, i32),
     ReportMobileEquipmentErrorSetting(i32),
 }
