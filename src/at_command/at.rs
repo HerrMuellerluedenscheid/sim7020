@@ -1,3 +1,4 @@
+#[cfg(feature = "defmt")]
 use defmt::{error, info};
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;

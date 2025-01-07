@@ -57,9 +57,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
     /// disable echo if echo is enabled
     pub fn disable_echo(&mut self) -> Result<(), AtError>{
-        // info!("check echo enabled");
-        // self
-        //     .send_and_wait_reply(&at_command::ate::AtEchoState {})?;
+        #[cfg(feature = "defmt")]
         info!("Disable echo");
         self
             .send_and_wait_reply(&at_command::ate::AtEcho {
@@ -69,20 +67,17 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     }
 
     pub fn enable_numeric_errors(&mut self) -> Result<(), AtError> {
-        info!("enable numeric errors");
         self
             .send_and_wait_reply(&at_command::cmee::SetReportMobileEquipmentError{setting: ReportMobileEquipmentErrorSetting::EnabledVerbose})?;
         Ok(())
     }
 
     pub fn get_flow_control(&mut self) -> Result<(), AtError>{
-        info!("Get flow control");
         self.send_and_wait_reply(&at_command::flow_control::GetFlowControl {}).expect("TODO: panic message");
         Ok(())
     }
 
     pub fn set_flow_control(&mut self) -> Result<(), AtError>{
-        info!("Set flow control to software");
         self.send_and_wait_reply(
             &at_command::flow_control::SetFlowControl{
                 ta_to_te: FlowControl::Software,
@@ -118,7 +113,6 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
             Err(e) => {
                 #[cfg(feature = "defmt")]
                 error!("{}\nparse response failed on request: {=[u8]:a}\n response: {=[u8]:a}", e, &data,  &read_buffer[..response_size]);
-                // Err(AtError::AtParseError)
                 Ok(AtResponse::Ok{})
             }
         }
@@ -144,7 +138,8 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
                         match &response_out[start..stop] {
                             OK_TERMINATOR => return {
-                                debug!("OK terminated: {=[u8]:a}", response_out[..offset + i + 5]);
+                                #[cfg(feature = "defmt")]
+                                trace!("OK terminated: {=[u8]:a}", response_out[..offset + i + 5]);
                                 Ok(offset + i)
 
                             },
@@ -158,7 +153,6 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
                                 continue
                             },
                         }
-                        info!("..");
                     }
 
                     offset += num_bytes;

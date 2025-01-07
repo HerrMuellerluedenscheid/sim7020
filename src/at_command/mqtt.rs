@@ -100,6 +100,7 @@ impl<'a> MQTTSession<StateDisconnected> {
         modem: &mut Modem<'_, T, U>,
         session_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSession<StateConnected>, AtError> {
+        #[cfg(feature = "defmt")]
         info!("Creating new session");
         match modem.send_and_wait_reply(session_settings) {
             Ok(AtResponse::MQTTSessionCreated(mqtt_connection_id)) => Ok(MQTTSession {

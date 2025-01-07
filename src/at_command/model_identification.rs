@@ -1,8 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 #[cfg(feature = "defmt")]
-use defmt::error;
-use defmt::info;
+use defmt::{error, info};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ModelIdentification {}
