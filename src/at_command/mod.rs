@@ -1,6 +1,8 @@
 #[cfg(feature = "defmt")]
 use defmt::debug;
 use crate::{AtError, BUFFER_SIZE};
+use crate::at_command::at_cgatt::GPRSServiceState;
+use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
 
 pub mod at_cgatt;
 pub mod at_cpin;
@@ -32,6 +34,7 @@ pub enum AtResponse {
     HTTPSessionCreated(u8),                               // client_id
     HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
     PacketDomainAttachmentState(GPRSServiceState),
+    NetworkInformationState(NetworkMode, NetworkFormat, Option<NetworkOperator>),
     SignalQuality(i32, i32),
     ReportMobileEquipmentErrorSetting(i32),
 }
