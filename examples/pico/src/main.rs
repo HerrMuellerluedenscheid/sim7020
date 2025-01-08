@@ -217,28 +217,39 @@ where
     T: Write,
     U: Read,
 {
-    let mut connection = MQTTSessionSettings::new("88.198.226.54", 1883);
-    let mqtt = Mqtt::new(connection);
-    let mqtt_session = mqtt
-        .create_session(&mut modem)
-        .map_err(|_| AtError::MqttFailure)?;
-    let mqtt_connection = mqtt_session
-        .connect(
-            &MQTTConnectionSettings {
-                mqtt_id: 0,
-                version: MQTTVersion::MQTT31,
-                client_id: "0",
-                keepalive_interval: 0,
-                clean_session: false,
-                will_flag: false,
-                username: "marius",
-                password: "Haufenhistory",
-            },
-            &mut modem,
-        )
-        .unwrap();
+    let connection = MQTTSessionSettings::new("88.198.226.54", 1883);
+
     loop {
         delay.delay_ms(1000);
+        info!("creating mqtt session.");
+
+        let mqtt = Mqtt::new(&connection);
+        let mqtt_session = mqtt
+            .create_session(&mut modem)
+            .map_err(|_| AtError::MqttFailure);
+        if let Err(e) = mqtt_session {
+            info!("mqtt session creation failed: {:?}. Retry", e);
+            continue;
+        }
+        let mqtt_session = mqtt_session.unwrap();
+        delay.delay_ms(1000);
+        let mqtt_connection = mqtt_session
+            .connect(
+                &MQTTConnectionSettings {
+                    mqtt_id: 0, // mqtt_id should be taken from session!
+                    version: MQTTVersion::MQTT31,
+                    client_id: "nbiot",
+                    keepalive_interval: 0,
+                    clean_session: false,
+                    will_flag: false,
+                    username: "marius",
+                    password: "Haufenhistory",
+                },
+                &mut modem,
+            )
+            .unwrap();
+        delay.delay_ms(1000);
+
         match mqtt_connection.publish(
             &at_command::mqtt::MQTTMessage {
                 topic: "test",                    // length max 128b
@@ -257,6 +268,9 @@ where
                 continue;
             }
         };
+        delay.delay_ms(1000);
+        let mqtt = mqtt_connection.disconnect(&mut modem).unwrap();
+        delay.delay_ms(10000);
     }
 
     // connected_mqtt.
