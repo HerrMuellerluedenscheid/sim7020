@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct StartQueryNTP<'a> {
-    pub ip_addr: &'a str,
+    pub url: &'a str,
 }
 
 impl AtRequest for StartQueryNTP<'_> {
@@ -13,7 +13,8 @@ impl AtRequest for StartQueryNTP<'_> {
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSNTPSTART")
-            .with_string_parameter(self.ip_addr)
+            .with_string_parameter(self.url)
+            .with_int_parameter(1)
             .finish()
     }
 }
