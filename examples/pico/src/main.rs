@@ -107,15 +107,14 @@ fn main() -> ! {
     let (mut reader, mut writer) = uart.split();
 
     let mut modem = Modem::new(&mut writer, &mut reader).unwrap();
-
     modem.set_flow_control().unwrap();
     modem.enable_numeric_errors().unwrap();
     'outer: loop {
         info!("waiting for operator");
-        modem
+        let registration = modem
             .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
             .unwrap();
-
+        info!("registration: {:?}", registration);
         let network_information = modem
             .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
             .unwrap();
@@ -143,7 +142,7 @@ fn main() -> ! {
     info!("model id: {}", response);
 
     modem
-        .send_and_wait_reply(&at_command::at_creg::AtCreg {})
+        .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
         .unwrap();
 
     let response = modem
@@ -161,17 +160,18 @@ fn main() -> ! {
             warn!("failed starting ntp connection. Connection already established?");
             return Err(e);
         });
-    delay.delay_ms(2000);
+
+    modem
+        .send_and_wait_reply(&at_command::ntp::NTPTime {})
+        .unwrap();
+
+    delay.delay_ms(4000);
     let _ = modem
         .send_and_wait_reply(&at_command::ntp::StopQueryNTP {})
         .or_else(|e| {
             warn!("failed stopping ntp connection. Connection already established?");
             return Err(e);
         });
-
-    modem
-        .send_and_wait_reply(&at_command::ntp::NTPTime {})
-        .unwrap();
 
     // if let Err(e) = test_http_connection(&mut modem) {
     //     error!("http test failed");
@@ -225,6 +225,10 @@ where
     let connection = MQTTSessionSettings::new("88.198.226.54", 1883);
 
     loop {
+        modem
+            .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
+            .unwrap();
+
         delay.delay_ms(1000);
         info!("creating mqtt session.");
 

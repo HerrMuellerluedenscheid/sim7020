@@ -96,7 +96,7 @@ async fn main(spawner: Spawner) -> ! {
     // // modem.send_and_wait_reply(at_command::network_information::NetworkInformationAvailable{}).unwrap();
     //
     modem
-        .send_and_wait_reply(at_command::at_creg::AtCreg {})
+        .send_and_wait_reply(at_command::at_creg::NetworkRegistration {})
         .await
         .unwrap();
 

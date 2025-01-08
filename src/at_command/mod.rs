@@ -1,4 +1,5 @@
 use crate::at_command::at_cgatt::GPRSServiceState;
+use crate::at_command::at_creg::{RegistrationStatus, UnsolicitedResultCodes};
 use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
@@ -37,6 +38,7 @@ pub enum AtResponse {
     NetworkInformationState(NetworkMode, NetworkFormat, Option<NetworkOperator>),
     SignalQuality(i32, i32),
     ReportMobileEquipmentErrorSetting(i32),
+    NetworkRegistration(UnsolicitedResultCodes, RegistrationStatus),
 }
 
 pub trait AtRequest {
