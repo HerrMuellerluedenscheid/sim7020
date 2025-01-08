@@ -1,6 +1,8 @@
 use crate::at_command::at_cgatt::GPRSServiceState;
-use crate::at_command::at_creg::{RegistrationStatus, UnsolicitedResultCodes};
 use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
+use crate::at_command::network_registration_status::{
+    NetworkRegistrationStatus, UnsolicitedResultCodes,
+};
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
@@ -21,6 +23,7 @@ pub mod http;
 pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;
+pub mod network_registration_status;
 pub mod ntp;
 
 type BufferType = [u8; BUFFER_SIZE];
@@ -38,7 +41,8 @@ pub enum AtResponse {
     NetworkInformationState(NetworkMode, NetworkFormat, Option<NetworkOperator>),
     SignalQuality(i32, i32),
     ReportMobileEquipmentErrorSetting(i32),
-    NetworkRegistration(UnsolicitedResultCodes, RegistrationStatus),
+    NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
+    NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
 }
 
 pub trait AtRequest {

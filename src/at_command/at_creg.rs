@@ -1,55 +1,8 @@
+use crate::at_command::network_registration_status::{
+    NetworkRegistrationStatus, UnsolicitedResultCodes,
+};
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum UnsolicitedResultCodes {
-    Disabled,
-    Enabled,
-    EnabledVerbose,
-}
-
-impl From<i32> for UnsolicitedResultCodes {
-    fn from(code: i32) -> Self {
-        match code {
-            0 => UnsolicitedResultCodes::Disabled,
-            1 => UnsolicitedResultCodes::Enabled,
-            2 => UnsolicitedResultCodes::EnabledVerbose,
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-}
-
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum RegistrationStatus {
-    NotRegistered,
-    RegisteredHomeNetwork,
-    NotRegisteredSearching,
-    RegistrationDenied,
-    Unknown,
-    RegisteredRoaming,
-    SMSOnlyHome,
-    SMSOnlyRoaming,
-}
-
-impl From<i32> for RegistrationStatus {
-    fn from(code: i32) -> Self {
-        match code {
-            0 => Self::NotRegistered,
-            1 => Self::RegisteredHomeNetwork,
-            2 => Self::NotRegisteredSearching,
-            3 => Self::RegistrationDenied,
-            4 => Self::Unknown,
-            5 => Self::RegisteredRoaming,
-            6 => Self::SMSOnlyHome,
-            7 => Self::SMSOnlyRoaming,
-            _ => {
-                unreachable!()
-            }
-        }
-    }
-}
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NetworkRegistration;
@@ -71,7 +24,7 @@ impl AtRequest for NetworkRegistration {
             .expect_identifier(b"\r\n\r\nOK\r")
             .finish()?;
         let unsolicited = UnsolicitedResultCodes::from(n);
-        let status = RegistrationStatus::from(stat);
+        let status = NetworkRegistrationStatus::from(stat);
         Ok(AtResponse::NetworkRegistration(unsolicited, status))
     }
 }

@@ -111,10 +111,22 @@ fn main() -> ! {
     modem.enable_numeric_errors().unwrap();
     'outer: loop {
         info!("waiting for operator");
+        let gprs_status = modem
+            .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
+            .unwrap();
+        info!("gprs status: {}", gprs_status);
+        let signal_quality = modem
+            .send_and_wait_reply(&at_command::at_csq::SignalQualityReport {})
+            .unwrap();
+        info!("signal quality: {}", signal_quality);
         let registration = modem
             .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
             .unwrap();
-        info!("registration: {:?}", registration);
+        info!("network registration: {:?}", registration);
+        let registration = modem
+            .send_and_wait_reply(&at_command::network_registration_status::NetworkRegistration {})
+            .unwrap();
+        info!("network registration status: {:?}", registration);
         let network_information = modem
             .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
             .unwrap();
