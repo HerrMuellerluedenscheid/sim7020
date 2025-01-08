@@ -151,6 +151,7 @@ fn main() -> ! {
     let _ = modem
         .send_and_wait_reply(&at_command::ntp::StartQueryNTP {
             url: "202.112.29.82",
+            tzinfo: Some(1),
         })
         .or_else(|e| {
             warn!("failed starting ntp connection. Connection already established?");
