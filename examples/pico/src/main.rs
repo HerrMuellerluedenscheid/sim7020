@@ -110,7 +110,7 @@ fn main() -> ! {
     modem.set_flow_control().unwrap();
     modem.enable_numeric_errors().unwrap();
     'outer: loop {
-        info!("waiting for operator");
+        info!("waiting for operator...........................................");
         let gprs_status = modem
             .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
@@ -127,6 +127,10 @@ fn main() -> ! {
             .send_and_wait_reply(&at_command::network_registration_status::NetworkRegistration {})
             .unwrap();
         info!("network registration status: {:?}", registration);
+        let pdp_context = modem
+            .send_and_wait_reply(&at_command::pdp_context::PDPContext {})
+            .unwrap();
+        info!("pdp context: {:?}", pdp_context);
         let network_information = modem
             .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
             .unwrap();

@@ -3,6 +3,7 @@ use crate::at_command::network_information::{NetworkFormat, NetworkMode, Network
 use crate::at_command::network_registration_status::{
     NetworkRegistrationStatus, UnsolicitedResultCodes,
 };
+use crate::at_command::pdp_context::PDPState;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
@@ -25,6 +26,7 @@ pub mod mqtt;
 pub mod network_information;
 pub mod network_registration_status;
 pub mod ntp;
+pub mod pdp_context;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -43,6 +45,7 @@ pub enum AtResponse {
     ReportMobileEquipmentErrorSetting(i32),
     NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
     NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
+    PDPContext(PDPState, i32),
 }
 
 pub trait AtRequest {
