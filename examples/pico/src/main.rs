@@ -112,6 +112,10 @@ fn main() -> ! {
     modem.enable_numeric_errors().unwrap();
     'outer: loop {
         info!("waiting for operator");
+        modem
+            .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
+            .unwrap();
+
         let network_information = modem
             .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
             .unwrap();
