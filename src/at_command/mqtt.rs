@@ -368,6 +368,33 @@ impl AtRequest for MQTTSessionSettings<'_> {
     }
 }
 
+pub struct GetMQTTSession {}
+
+impl AtRequest for GetMQTTSession {
+    type Response = ();
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        CommandBuilder::create_query(buffer, true)
+            .named("+CMQNEW")
+            .finish()
+    }
+
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let (mqtt_id, used_state, server) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CMQNEW: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
+        info!(
+            " mqtt_id: {} used_state {}, server{}",
+            mqtt_id, used_state, server
+        );
+        Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
+    }
+}
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct CloseMQTTConnection {
     pub mqtt_id: u8,
