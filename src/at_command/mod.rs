@@ -45,7 +45,7 @@ pub enum AtResponse {
     ReportMobileEquipmentErrorSetting(i32),
     NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
     NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
-    PDPContext(PDPState, i32),
+    PDPContext(Option<(PDPState, i32)>),
 }
 
 pub trait AtRequest {

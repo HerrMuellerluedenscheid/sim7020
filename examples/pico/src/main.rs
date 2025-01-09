@@ -131,6 +131,11 @@ fn main() -> ! {
             .send_and_wait_reply(&at_command::pdp_context::PDPContext {})
             .unwrap();
         info!("pdp context: {:?}", pdp_context);
+        let response = modem
+            .send_and_wait_reply(&at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
+            .unwrap();
+
+        info!("pdp context dynamics parameters: {}", response);
         let network_information = modem
             .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
             .unwrap();
@@ -161,16 +166,11 @@ fn main() -> ! {
         .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
         .unwrap();
 
-    let response = modem
-        .send_and_wait_reply(&at_command::cgcontrdp::PDPContextReadDynamicsParameters {})
-        .unwrap();
-
-    info!("response: {}", response);
-
+    delay.delay_ms(4000);
     let _ = modem
         .send_and_wait_reply(&at_command::ntp::StartQueryNTP {
             url: "202.112.29.82",
-            tzinfo: Some(1),
+            tzinfo: None,
         })
         .or_else(|e| {
             warn!("failed starting ntp connection. Connection already established?");
@@ -192,12 +192,6 @@ fn main() -> ! {
     // if let Err(e) = test_http_connection(&mut modem) {
     //     error!("http test failed");
     // }
-    delay.delay_ms(2000);
-
-    modem
-        .send_and_wait_reply(&at_command::network_information::NetworkInformation {})
-        .unwrap();
-
     test_mqtt_connection(&mut modem, &mut delay).unwrap();
     delay.delay_ms(2000);
 
@@ -238,9 +232,20 @@ where
     T: Write,
     U: Read,
 {
+
+    modem
+        .send_and_wait_reply(&at_command::mqtt::GetMQTTSession {})
+        .unwrap();
+
     let connection = MQTTSessionSettings::new("88.198.226.54", 1883);
 
+
     loop {
+
+        modem
+            .send_and_wait_reply(&at_command::mqtt::GetMQTTSession {})
+            .unwrap();
+
         modem
             .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
             .unwrap();

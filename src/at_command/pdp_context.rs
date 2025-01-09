@@ -1,6 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
+use defmt::debug;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum PDPState {
@@ -33,6 +34,11 @@ impl AtRequest for PDPContext {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        if data.starts_with(b"\r\nOK\r") {
+            #[cfg(feature = "defmt")]
+            debug!("waiting for PDPContext");
+            return Ok(AtResponse::PDPContext(None));
+        };
         let (state, context) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CGACT: ")
             .expect_int_parameter()
@@ -40,6 +46,6 @@ impl AtRequest for PDPContext {
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
         let state = PDPState::from(state);
-        Ok(AtResponse::PDPContext(state, context))
+        Ok(AtResponse::PDPContext(Some((state, context))))
     }
 }
