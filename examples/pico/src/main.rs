@@ -275,8 +275,8 @@ where
                     keepalive_interval: 0,
                     clean_session: false,
                     will_flag: false,
-                    username: "marius",
-                    password: "Haufenhistory",
+                    username: env!("EXAMPLE_MQTT_USER"),
+                    password: env!("EXAMPLE_MQTT_PASSWORD"),
                 },
                 &mut modem,
             )
