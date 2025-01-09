@@ -57,7 +57,7 @@ impl AtRequest for GetFlowControl {
     /// dte_by_dce: Specifies the method will be used by TA at receive of data
     ///             from TE
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (dce_by_dte, dte_by_dce, ra) = CommandParser::parse(data)
+        let (dce_by_dte, dte_by_dce, _) = CommandParser::parse(data)
             .expect_optional_identifier(b"AT+IFC?\r")
             .expect_identifier(b"\r\n+IFC: ")
             .expect_int_parameter()

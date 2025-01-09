@@ -24,10 +24,9 @@ impl AtRequest for At {
             .expect_raw_string()
             .expect_identifier(b"\r\nAT\r\r\nOK\r")
             .finish()
-            .map_err(|e| {
+            .inspect_err(|e| {
                 #[cfg(feature = "defmt")]
                 error!("Failed to parse response: {=[u8]:a}", data);
-                e
             })?;
         #[cfg(feature = "defmt")]
         info!("matready: {} | cfun: {}", matready, cfun);

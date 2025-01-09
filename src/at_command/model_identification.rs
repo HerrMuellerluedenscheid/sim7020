@@ -21,10 +21,9 @@ impl AtRequest for ModelIdentification {
             .expect_raw_string()
             .expect_identifier(b"\r\n\r\nOK\r")
             .finish()
-            .map_err(|e| {
+            .inspect(|e| {
                 #[cfg(feature = "defmt")]
                 error!("Failed to parse response: {=[u8]:a}", data);
-                e
             })?;
 
         let mut id: [u8; 8] = [0; 8];
