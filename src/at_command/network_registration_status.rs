@@ -1,5 +1,6 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
+#[cfg(feature = "defmt")]
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -73,7 +74,6 @@ impl AtRequest for NetworkRegistration {
             .finish()?;
         let unsolicited = UnsolicitedResultCodes::from(n);
         let status = NetworkRegistrationStatus::from(stat);
-        info!("{:?} {:?}", unsolicited, status);
         Ok(AtResponse::NetworkRegistrationStatus(unsolicited, status))
     }
 }

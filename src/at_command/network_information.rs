@@ -87,8 +87,6 @@ impl AtRequest for NetworkInformation {
             None => None,
             Some(o) => Some(NetworkOperator::from(o)),
         };
-        #[cfg(feature = "defmt")]
-        info!("network information: {:?} | operator: {}", mode, operator);
         Ok(AtResponse::NetworkInformationState(mode, format, operator))
     }
 }
