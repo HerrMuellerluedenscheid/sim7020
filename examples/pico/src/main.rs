@@ -232,19 +232,18 @@ where
     T: Write,
     U: Read,
 {
-
-    modem
+    let mqtt_session = modem
         .send_and_wait_reply(&at_command::mqtt::GetMQTTSession {})
         .unwrap();
+    info!("mqtt_session: {:?}", mqtt_session);
 
     let connection = MQTTSessionSettings::new("88.198.226.54", 1883);
 
-
     loop {
-
-        modem
+        let mqtt_session = modem
             .send_and_wait_reply(&at_command::mqtt::GetMQTTSession {})
             .unwrap();
+        info!("mqtt_session: {:?}", mqtt_session);
 
         modem
             .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
@@ -278,6 +277,10 @@ where
                 &mut modem,
             )
             .unwrap();
+        let mqtt_session = modem
+            .send_and_wait_reply(&at_command::mqtt::GetMQTTSession {})
+            .unwrap();
+        info!("mqtt_session: {:?}", mqtt_session);
         delay.delay_ms(1000);
 
         match mqtt_connection.publish(

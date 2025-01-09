@@ -7,6 +7,7 @@ use crate::at_command::pdp_context::PDPState;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
+use crate::at_command::mqtt::UsedState;
 
 pub mod at;
 pub mod at_cgatt;
@@ -36,7 +37,8 @@ pub enum AtResponse {
     ModelIdentifier([u8; 8]),
     NTPTimestamp(i64),
     PDPContextDynamicParameters(u8, u8, *const u8, *const u8),
-    MQTTSessionCreated(u8),                               // client_id
+    MQTTSessionCreated(u8), // client_id
+    MQTTSession(u8, UsedState, [u8; 50]),
     HTTPSessionCreated(u8),                               // client_id
     HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
     PacketDomainAttachmentState(GPRSServiceState),

@@ -6,6 +6,8 @@ use at_commands::builder::CommandBuilder;
 use defmt::{error, info, warn};
 use embedded_io::{Read, Write};
 
+const MAX_SERVER_LEN: usize = 50;
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format, Debug))]
 pub enum MQTTError {
     ConnectionFailed,
@@ -368,6 +370,22 @@ impl AtRequest for MQTTSessionSettings<'_> {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format, Debug))]
+pub enum UsedState {
+    NotUsed,
+    Used,
+}
+
+impl From<i32> for UsedState {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => UsedState::NotUsed,
+            1 => UsedState::Used,
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub struct GetMQTTSession {}
 
 impl AtRequest for GetMQTTSession {
@@ -387,11 +405,14 @@ impl AtRequest for GetMQTTSession {
             .expect_raw_string()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
-        info!(
-            " mqtt_id: {} used_state {}, server{}",
-            mqtt_id, used_state, server
-        );
-        Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
+        let mut server_str: [u8; MAX_SERVER_LEN] = [0; MAX_SERVER_LEN];
+        let chars = server.len().min(MAX_SERVER_LEN);
+        server_str[..chars].copy_from_slice(&server.as_bytes()[..chars]);
+        Ok(AtResponse::MQTTSession(
+            mqtt_id as u8,
+            UsedState::from(used_state),
+            server_str,
+        ))
     }
 }
 
