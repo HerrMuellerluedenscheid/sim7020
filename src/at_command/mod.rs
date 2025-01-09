@@ -1,13 +1,14 @@
 use crate::at_command::at_cgatt::GPRSServiceState;
+use crate::at_command::mqtt::UsedState;
 use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
 use crate::at_command::network_registration_status::{
     NetworkRegistrationStatus, UnsolicitedResultCodes,
 };
 use crate::at_command::pdp_context::PDPState;
+use crate::at_command::sleep_indication::SleepIndication;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
-use crate::at_command::mqtt::UsedState;
 
 pub mod at;
 pub mod at_cgatt;
@@ -28,6 +29,7 @@ pub mod network_information;
 pub mod network_registration_status;
 pub mod ntp;
 pub mod pdp_context;
+pub mod sleep_indication;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -48,6 +50,7 @@ pub enum AtResponse {
     NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
     NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
     PDPContext(Option<(PDPState, i32)>),
+    SleepIndication(SleepIndication),
 }
 
 pub trait AtRequest {

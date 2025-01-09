@@ -114,7 +114,11 @@ fn main() -> ! {
         let gprs_status = modem
             .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
-        info!("gprs status: {}", gprs_status);
+        info!("waiting for operator...........................................");
+        let sleep_indication = modem
+            .send_and_wait_reply(&at_command::sleep_indication::SleepIndicationStatus {})
+            .unwrap();
+        info!("sleep_indication status: {}", sleep_indication);
         let signal_quality = modem
             .send_and_wait_reply(&at_command::at_csq::SignalQualityReport {})
             .unwrap();
