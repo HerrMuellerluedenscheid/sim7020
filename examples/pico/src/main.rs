@@ -174,28 +174,30 @@ fn main() -> ! {
         .send_and_wait_reply(&at_command::at_creg::NetworkRegistration {})
         .unwrap();
 
-    delay.delay_ms(4000);
-    let _ = modem
-        .send_and_wait_reply(&at_command::ntp::StartQueryNTP {
-            url: "202.112.29.82",
-            tzinfo: None,
-        })
-        .or_else(|e| {
-            warn!("failed starting ntp connection. Connection already established?");
-            return Err(e);
-        });
-
-    modem
-        .send_and_wait_reply(&at_command::ntp::NTPTime {})
+    let time = modem
+        .send_and_wait_reply(&at_command::clock::Clock {})
         .unwrap();
-
-    delay.delay_ms(4000);
-    let _ = modem
-        .send_and_wait_reply(&at_command::ntp::StopQueryNTP {})
-        .or_else(|e| {
-            warn!("failed stopping ntp connection. Connection already established?");
-            return Err(e);
-        });
+    info!("network time: {}", time);
+    //
+    // delay.delay_ms(4000);
+    // let _ = modem
+    //     .send_and_wait_reply(&at_command::ntp::StartQueryNTP {
+    //         url: "pool.ntp.org",
+    //         tzinfo: Some("+32"),
+    //     })
+    //     .or_else(|e| {
+    //         warn!("failed starting ntp connection. Connection already established?");
+    //         return Err(e);
+    //     });
+    //
+    // delay.delay_ms(10000);
+    // let _ = modem
+    //     .send_and_wait_reply(&at_command::ntp::StopQueryNTP {})
+    //     .or_else(|e| {
+    //         warn!("failed stopping ntp connection. Connection already established?");
+    //         return Err(e);
+    //     });
+    // // here we should expect an unsolicited ntp response
 
     // if let Err(e) = test_http_connection(&mut modem) {
     //     error!("http test failed");

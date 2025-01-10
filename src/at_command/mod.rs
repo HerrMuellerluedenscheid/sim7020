@@ -21,6 +21,7 @@ pub mod ate;
 pub mod ati;
 pub mod ceer;
 pub mod cgcontrdp;
+pub mod clock;
 pub mod cmee;
 pub(crate) mod flow_control;
 pub mod http;

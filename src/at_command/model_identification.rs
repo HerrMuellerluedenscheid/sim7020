@@ -19,7 +19,7 @@ impl AtRequest for ModelIdentification {
         let (parsed,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n")
             .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK\r")
+            .expect_identifier(b"\r\n\r\nOK")
             .finish()
             .inspect(|e| {
                 #[cfg(feature = "defmt")]

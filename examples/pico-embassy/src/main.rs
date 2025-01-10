@@ -111,7 +111,7 @@ async fn main(spawner: Spawner) -> ! {
         });
 
     modem
-        .send_and_wait_reply(at_command::ntp::NTPTime {})
+        .send_and_wait_reply(at_command::ntp::Clock {})
         .await
         .unwrap();
 
