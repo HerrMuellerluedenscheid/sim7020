@@ -3,7 +3,7 @@ use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
-use defmt::{error, info, warn};
+use defmt::{error, info};
 use embedded_io::{Read, Write};
 
 const MAX_SERVER_LEN: usize = 50;
@@ -34,7 +34,7 @@ impl<'a> Mqtt<'a> {
     ) -> Result<Self, MQTTError> {
         let session_wrapper = self
             .session_wrapper
-            .create_session(modem, &self.session_settings)?;
+            .create_session(modem, self.session_settings)?;
         Ok(Self {
             session_settings: self.session_settings,
             session_wrapper,
@@ -106,9 +106,9 @@ impl MQTTSessionWrapper {
         match self {
             Disconnected(session) => match session.create_session(modem, session_settings) {
                 Ok(session) => Ok(Self::Connected(session)),
-                Err(err) => {
+                Err(_e) => {
                     #[cfg(feature = "defmt")]
-                    error!("{:?}", err);
+                    error!("{:?}", _e);
                     Err(MQTTError::Disconnected)
                 }
             },
@@ -130,9 +130,9 @@ impl MQTTSessionWrapper {
             MQTTSessionWrapper::Connected(session) => {
                 match session.connect(modem, connection_settings) {
                     Ok(session) => Ok(Self::ConnectedGood(session)),
-                    Err(err) => {
+                    Err(_e) => {
                         #[cfg(feature = "defmt")]
-                        error!("{:?}", err);
+                        error!("{:?}", _e);
                         Err(MQTTError::Disconnected)
                     }
                 }
@@ -175,7 +175,13 @@ struct StateConnectedGood {
     mqtt_connection_id: u8,
 }
 
-impl<'a> MQTTSession<StateDisconnected> {
+impl Default for MQTTSession<StateDisconnected> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MQTTSession<StateDisconnected> {
     pub fn new() -> MQTTSession<StateDisconnected> {
         Self {
             state: StateDisconnected {},
@@ -193,9 +199,9 @@ impl<'a> MQTTSession<StateDisconnected> {
             Ok(AtResponse::MQTTSessionCreated(mqtt_connection_id)) => Ok(MQTTSession {
                 state: StateConnected { mqtt_connection_id },
             }),
-            Ok(response) => {
+            Ok(_response) => {
                 #[cfg(feature = "defmt")]
-                error!("unexpected response from mqtt modem: {:?}", response);
+                error!("unexpected response from mqtt modem: {:?}", _response);
                 Err(AtError::ErrorReply(0))
             }
             Err(e) => Err(e),
@@ -203,7 +209,7 @@ impl<'a> MQTTSession<StateDisconnected> {
     }
 }
 
-impl<'a> MQTTSession<StateConnected> {
+impl MQTTSession<StateConnected> {
     pub fn disconnect<T: Write, U: Read>(
         &self,
         modem: &mut Modem<'_, T, U>,
@@ -241,7 +247,7 @@ impl<'a> MQTTSession<StateConnected> {
     }
 }
 
-impl<'a> MQTTSession<StateConnectedGood> {
+impl MQTTSession<StateConnectedGood> {
     fn disconnect<T: Write, U: Read>(
         &self,
         modem: &mut Modem<'_, T, U>,

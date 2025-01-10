@@ -1,6 +1,5 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-use at_commands::parser::CommandParser;
 
 #[cfg(feature = "defmt")]
 use defmt::info;
@@ -17,9 +16,9 @@ impl AtRequest for ExtendedErrorReport {
             .finish()
     }
 
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+    fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
         #[cfg(feature = "defmt")]
-        info!("error report response: {=[u8]:a}", data);
+        info!("error report response: {=[u8]:a}", _data);
         Ok(AtResponse::Ok)
     }
 }

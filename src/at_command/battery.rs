@@ -2,12 +2,12 @@ use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 
+#[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct BatteryChargeStatus{
+pub struct BatteryChargeStatus {
     capacity_percent: i32,
     voltage_millivolt: i32,
 }
-
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BatteryCharge;
@@ -28,7 +28,10 @@ impl AtRequest for BatteryCharge {
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
-        let status = BatteryChargeStatus{capacity_percent, voltage_millivolt};
+        let status = BatteryChargeStatus {
+            capacity_percent,
+            voltage_millivolt,
+        };
         Ok(AtResponse::BatteryCharge(status))
     }
 }

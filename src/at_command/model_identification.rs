@@ -1,7 +1,7 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 #[cfg(feature = "defmt")]
-use defmt::{error, info};
+use defmt::error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ModelIdentification {}
@@ -21,7 +21,7 @@ impl AtRequest for ModelIdentification {
             .expect_raw_string()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()
-            .inspect(|e| {
+            .inspect(|_e| {
                 #[cfg(feature = "defmt")]
                 error!("Failed to parse response: {=[u8]:a}", data);
             })?;

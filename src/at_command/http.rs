@@ -3,9 +3,6 @@ use crate::AtError;
 use at_commands::builder::CommandBuilder;
 use at_commands::parser::CommandParser;
 
-#[cfg(feature = "defmt")]
-use defmt::info;
-
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct HttpClient {
@@ -110,12 +107,6 @@ impl AtRequest for HttpConnect {
             .named("+CHTTPCON")
             .with_int_parameter(self.client_id)
             .finish()
-    }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        #[cfg(feature = "defmt")]
-        info!("parsing {=[u8]:a}", data);
-        Ok(AtResponse::Ok)
     }
 }
 

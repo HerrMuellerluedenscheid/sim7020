@@ -1,4 +1,6 @@
 use crate::at_command::at_cgatt::GPRSServiceState;
+use crate::at_command::battery::BatteryChargeStatus;
+use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::mqtt::UsedState;
 use crate::at_command::network_information::{NetworkFormat, NetworkMode, NetworkOperator};
 use crate::at_command::network_registration_status::{
@@ -10,7 +12,6 @@ use crate::at_command::sleep_indication::SleepIndication;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
-use crate::at_command::battery::BatteryChargeStatus;
 
 pub mod at;
 pub mod at_cgatt;
@@ -20,6 +21,7 @@ pub mod at_csq;
 pub mod at_cstt;
 pub mod ate;
 pub mod ati;
+pub mod battery;
 pub mod ceer;
 pub mod cgcontrdp;
 pub mod clock;
@@ -34,7 +36,6 @@ pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
 pub mod sleep_indication;
-pub mod battery;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -58,6 +59,7 @@ pub enum AtResponse {
     SleepIndication(SleepIndication),
     PowerSavingMode(PowerSavingModeState),
     BatteryCharge(BatteryChargeStatus),
+    ControlFlow(ControlFlowStatus, ControlFlowStatus),
 }
 
 pub trait AtRequest {

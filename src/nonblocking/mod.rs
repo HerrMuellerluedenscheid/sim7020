@@ -1,14 +1,12 @@
 use crate::at_command::{AtRequest, AtResponse};
-use crate::{at_command, AtError, Modem, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
-use embedded_hal::digital::{InputPin, OutputPin};
-use embedded_hal::spi::Mode;
-use embedded_io_async::{ErrorType, Read, Write};
+use crate::{at_command, AtError, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
+use embedded_io_async::{Read, Write};
 
-use crate::at_command::at_creg::AtCregError;
 use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 #[cfg(feature = "defmt")]
 use defmt::*;
-use embedded_io::{Error, ErrorKind};
+#[cfg(feature = "defmt")]
+use embedded_io::Error;
 use log::error;
 
 pub struct AsyncModem<T: Write, U: Read> {
@@ -107,7 +105,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
 
                         match &response_out[start..stop] {
                             OK_TERMINATOR => return Ok(offset + i),
-                            ERROR_TERMINATOR => return Err(crate::AtError::ErrorReply(offset + i)),
+                            ERROR_TERMINATOR => return Err(AtError::ErrorReply(offset + i)),
                             _ => continue,
                         }
                     }

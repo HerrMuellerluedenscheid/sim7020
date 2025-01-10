@@ -6,16 +6,16 @@ pub mod at_command;
 pub mod nonblocking;
 
 use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
-use crate::at_command::flow_control::FlowControl;
+use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
 use at_commands::parser::ParseError;
-use core::ptr::read;
 #[cfg(feature = "defmt")]
 use defmt::*;
-use embedded_io::{Error, ErrorKind};
-pub use embedded_io::{ErrorType, Read, Write};
+#[cfg(feature = "defmt")]
+use embedded_io::Error;
+pub use embedded_io::{Read, Write};
 
 const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
@@ -80,8 +80,8 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
     pub fn set_flow_control(&mut self) -> Result<(), AtError> {
         self.send_and_wait_reply(&at_command::flow_control::SetFlowControl {
-            ta_to_te: FlowControl::Software,
-            te_to_ta: FlowControl::Software,
+            ta_to_te: ControlFlowStatus::Software,
+            te_to_ta: ControlFlowStatus::Software,
         })
         .expect("TODO: panic message");
         Ok(())
@@ -104,18 +104,18 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
         #[cfg(feature = "defmt")]
         debug!("sending command: {=[u8]:a}", data);
-        self.writer.write(&data).map_err(|e| AtError::IOError)?;
+        self.writer.write(data).map_err(|_e| AtError::IOError)?;
 
         let mut read_buffer = [0; BUFFER_SIZE];
         let response_size = self.read_response(&mut read_buffer)?;
         let response = payload.parse_response(&read_buffer[..response_size]);
         match response {
             Ok(response) => Ok(response),
-            Err(e) => {
+            Err(_e) => {
                 #[cfg(feature = "defmt")]
                 error!(
                     "{}\nparse response failed on request: {=[u8]:a}\n response: {=[u8]:a}",
-                    e,
+                    _e,
                     &data,
                     &read_buffer[..response_size]
                 );
@@ -175,9 +175,9 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
                     offset += num_bytes;
                 }
 
-                Err(e) => {
+                Err(_e) => {
                     #[cfg(feature = "defmt")]
-                    error!("uart error {}", e.kind());
+                    error!("uart error {}", _e.kind());
                     return Err(AtError::NotReady);
                 }
             }

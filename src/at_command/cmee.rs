@@ -62,10 +62,4 @@ impl AtRequest for SetReportMobileEquipmentError {
             .with_int_parameter(setting)
             .finish()
     }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        #[cfg(feature = "defmt")]
-        info!("error report response write: {=[u8]:a}", data);
-        Ok(AtResponse::Ok)
-    }
 }

@@ -1,9 +1,8 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
-#[cfg(feature = "defmt")]
-use defmt::info;
 
+#[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NetworkOperator([u8; 10]);
 
@@ -83,10 +82,7 @@ impl AtRequest for NetworkInformation {
             Some(form) => NetworkFormat::from(form),
             None => NetworkFormat::Unknown,
         };
-        let operator = match operator {
-            None => None,
-            Some(o) => Some(NetworkOperator::from(o)),
-        };
+        let operator = operator.map(NetworkOperator::from);
         Ok(AtResponse::NetworkInformationState(mode, format, operator))
     }
 }

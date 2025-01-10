@@ -6,7 +6,7 @@ use at_commands::parser::CommandParser;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum FlowControl {
+pub enum ControlFlowStatus {
     No,
     Software,
     Hardware,
@@ -14,16 +14,16 @@ pub enum FlowControl {
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SetFlowControl {
-    pub(crate) ta_to_te: FlowControl,
-    pub(crate) te_to_ta: FlowControl,
+    pub(crate) ta_to_te: ControlFlowStatus,
+    pub(crate) te_to_ta: ControlFlowStatus,
 }
 
-impl FlowControl {
+impl ControlFlowStatus {
     fn to_int(&self) -> i32 {
         match self {
-            FlowControl::No => 0,
-            FlowControl::Software => 1,
-            FlowControl::Hardware => 2,
+            ControlFlowStatus::No => 0,
+            ControlFlowStatus::Software => 1,
+            ControlFlowStatus::Hardware => 2,
         }
     }
 }
@@ -65,19 +65,19 @@ impl AtRequest for GetFlowControl {
             .expect_raw_string()
             .finish()?;
         let dce_by_dte = match dce_by_dte {
-            0 => FlowControl::No,
-            1 => FlowControl::Software,
-            2 => FlowControl::Hardware,
+            0 => ControlFlowStatus::No,
+            1 => ControlFlowStatus::Software,
+            2 => ControlFlowStatus::Hardware,
             _ => panic!("Invalid dce-by-dte parameter returned"),
         };
         let dte_by_dce = match dte_by_dce {
-            0 => FlowControl::No,
-            1 => FlowControl::Software,
-            2 => FlowControl::Hardware,
+            0 => ControlFlowStatus::No,
+            1 => ControlFlowStatus::Software,
+            2 => ControlFlowStatus::Hardware,
             _ => panic!("Invalid dce-by-dte parameter returned"),
         };
         #[cfg(feature = "defmt")]
         info!("parity {}, {}", dce_by_dte, dte_by_dce);
-        Ok(AtResponse::Ok {})
+        Ok(AtResponse::ControlFlow(dce_by_dte, dte_by_dce))
     }
 }

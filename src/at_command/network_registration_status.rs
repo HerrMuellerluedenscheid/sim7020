@@ -1,7 +1,5 @@
 use crate::at_command::{AtRequest, AtResponse, BufferType};
 use crate::AtError;
-#[cfg(feature = "defmt")]
-use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum UnsolicitedResultCodes {
