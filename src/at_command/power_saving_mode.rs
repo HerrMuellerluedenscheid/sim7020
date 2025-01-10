@@ -35,9 +35,8 @@ impl AtRequest for GetPowerSavingMode {
     }
 
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (state, context) = CommandParser::parse(data)
+        let (state,) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CPSMS: ")
-            .expect_int_parameter()
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
