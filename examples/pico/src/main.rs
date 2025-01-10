@@ -115,6 +115,10 @@ fn main() -> ! {
             .send_and_wait_reply(&at_command::power_saving_mode::GetPowerSavingMode {})
             .unwrap();
         info!("power_saving_mode: {}", power_saving_mode);
+        let battery_charge = modem
+            .send_and_wait_reply(&at_command::battery::BatteryCharge {})
+            .unwrap();
+        info!("battery_charge: {}", battery_charge);
         let gprs_status = modem
             .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();

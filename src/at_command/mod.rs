@@ -10,6 +10,7 @@ use crate::at_command::sleep_indication::SleepIndication;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
 use defmt::debug;
+use crate::at_command::battery::BatteryChargeStatus;
 
 pub mod at;
 pub mod at_cgatt;
@@ -33,6 +34,7 @@ pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
 pub mod sleep_indication;
+pub mod battery;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -55,6 +57,7 @@ pub enum AtResponse {
     PDPContext(Option<(PDPState, i32)>),
     SleepIndication(SleepIndication),
     PowerSavingMode(PowerSavingModeState),
+    BatteryCharge(BatteryChargeStatus),
 }
 
 pub trait AtRequest {
