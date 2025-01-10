@@ -5,6 +5,7 @@ use crate::at_command::network_registration_status::{
     NetworkRegistrationStatus, UnsolicitedResultCodes,
 };
 use crate::at_command::pdp_context::PDPState;
+use crate::at_command::power_saving_mode::PowerSavingModeState;
 use crate::at_command::sleep_indication::SleepIndication;
 use crate::{AtError, BUFFER_SIZE};
 #[cfg(feature = "defmt")]
@@ -29,6 +30,7 @@ pub mod network_information;
 pub mod network_registration_status;
 pub mod ntp;
 pub mod pdp_context;
+pub mod power_saving_mode;
 pub mod sleep_indication;
 
 type BufferType = [u8; BUFFER_SIZE];
@@ -51,6 +53,7 @@ pub enum AtResponse {
     NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
     PDPContext(Option<(PDPState, i32)>),
     SleepIndication(SleepIndication),
+    PowerSavingMode(PowerSavingModeState),
 }
 
 pub trait AtRequest {

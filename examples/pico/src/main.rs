@@ -111,10 +111,14 @@ fn main() -> ! {
     modem.enable_numeric_errors().unwrap();
     'outer: loop {
         info!("waiting for operator...........................................");
+        let power_saving_mode = modem
+            .send_and_wait_reply(&at_command::power_saving_mode::GetPowerSavingMode {})
+            .unwrap();
+        info!("power_saving_mode: {}", power_saving_mode);
         let gprs_status = modem
             .send_and_wait_reply(&at_command::at_cgatt::GPRSServiceStatus {})
             .unwrap();
-        info!("waiting for operator...........................................");
+        info!("gprs status: {}", gprs_status);
         let sleep_indication = modem
             .send_and_wait_reply(&at_command::sleep_indication::SleepIndicationStatus {})
             .unwrap();
