@@ -3,22 +3,18 @@
 [package]
 edition = "2021"
 name = "sim7020"
-version = "2.0.0"
+version = "2.1.0"
 license = "MIT"
 repository = "https://github.com/HerrMuellerluedenscheid/sim7020"
 description = "driver for sim7020E NB IoT modem"
 
 [dependencies]
-embedded-hal = { version = "1.0.0" }
-
 defmt = { version = "0.3", optional = true}
 
-hex = { version = "0.4.3", default-features = false }
 # make defmt-03 optional!
 embedded-io = { version = "0.6.1", features = ["defmt-03"] }
 at-commands = "0.5.4"
 embedded-io-async = { version = "0.6.1", optional = true }
-strum_macros = "0.26.4"
 chrono = { version = "0.4.38", default-features = false}
 log = "0.4.22"
 
