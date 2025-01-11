@@ -318,58 +318,6 @@ where
         let mqtt = mqtt_connection.disconnect(&mut modem).unwrap();
         delay.delay_ms(10000);
     }
-
-    // connected_mqtt.
-    // let connected = connection.connect(modem)?;
-    // connected.disconnect();
-
-    // modem
-    //     .send_and_wait_reply(&at_command::mqtt::CloseMQTTConnection { mqtt_id: 0 })
-    //     .or_else(|e| {
-    //         warn!("failed closing mqtt connection");
-    //         return Err(e);
-    //     }).expect("TODO: panic message");
-    //
-    // modem
-    //     .send_and_wait_reply(at_command::mqtt::MQTTRawData {
-    //         data_format: at_command::mqtt::MQTTDataFormat::Bytes,
-    //     })
-    //     .unwrap();
-    //
-    // if let AtResponse::MQTTSessionCreated(mqtt_id) =
-    //     modem.send_and_wait_reply(at_command::mqtt::MQTTConnectionSettings {
-    //         server: "88.198.226.54",
-    //         port: 1883,
-    //         timeout_ms: 5000,
-    //         buffer_size: 600,
-    //         context_id: None,
-    //     })?
-    // {
-    //     modem.send_and_wait_reply(at_command::mqtt::MQTTConnect {
-    //         mqtt_id,
-    //         version: at_command::mqtt::MQTTVersion::MQTT311,
-    //         client_id: "sdo92u34oij",
-    //         keepalive_interval: 120,
-    //         clean_session: false,
-    //         will_flag: false,
-    //         username: "marius",
-    //         password: "Haufenhistory",
-    //     })?;
-    //     delay.delay_ms(500);
-    //     modem.send_and_wait_reply(at_command::mqtt::MQTTPublish {
-    //         mqtt_id,
-    //         topic: "test",                    // length max 128b
-    //         qos: 1,                           // 0 | 1 | 2
-    //         retained: false,                  // 0 | 1
-    //         dup: false,                       // 0 | 1
-    //         message: b"hello world via mqtt", // as hex
-    //     })?;
-    //     modem
-    //         .send_and_wait_reply(at_command::mqtt::CloseMQTTConnection { mqtt_id })
-    //         .unwrap();
-    // }
-
-    Ok(())
 }
 
 fn test_http_connection<T, U>(modem: &mut Modem<T, U>) -> Result<(), AtError>
