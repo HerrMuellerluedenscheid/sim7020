@@ -43,7 +43,7 @@ impl<'a> Mqtt<'a> {
 
     pub fn connect<T: Write, U: Read>(
         self,
-        connection_settings: &MQTTConnectionSettings,
+        connection_settings: MQTTConnectionSettings,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<Self, MQTTError> {
         let session_wrapper = self.session_wrapper.connect(modem, connection_settings)?;
@@ -123,7 +123,7 @@ impl MQTTSessionWrapper {
     fn connect<T: Write, U: Read>(
         self,
         modem: &mut Modem<'_, T, U>,
-        connection_settings: &MQTTConnectionSettings,
+        connection_settings: MQTTConnectionSettings,
     ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
             Disconnected(_) => Err(MQTTError::Disconnected),
@@ -168,11 +168,11 @@ pub struct MQTTSession<S> {
 struct StateDisconnected {}
 
 struct StateConnected {
-    mqtt_connection_id: u8,
+    mqtt_id: u8,
 }
 
 struct StateConnectedGood {
-    mqtt_connection_id: u8,
+    mqtt_id: u8,
 }
 
 impl Default for MQTTSession<StateDisconnected> {
@@ -196,8 +196,8 @@ impl MQTTSession<StateDisconnected> {
         #[cfg(feature = "defmt")]
         info!("Creating new session");
         match modem.send_and_wait_reply(session_settings) {
-            Ok(AtResponse::MQTTSessionCreated(mqtt_connection_id)) => Ok(MQTTSession {
-                state: StateConnected { mqtt_connection_id },
+            Ok(AtResponse::MQTTSessionCreated(mqtt_id)) => Ok(MQTTSession {
+                state: StateConnected { mqtt_id },
             }),
             Ok(_response) => {
                 #[cfg(feature = "defmt")]
@@ -214,11 +214,9 @@ impl MQTTSession<StateConnected> {
         &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
-        modem
-            .send_and_wait_reply(&CloseMQTTConnection {
-                mqtt_id: self.state.mqtt_connection_id,
-            })
-            .expect("TODO: panic message");
+        modem.send_and_wait_reply(&CloseMQTTConnection {
+            mqtt_id: self.state.mqtt_id,
+        })?;
         Ok(MQTTSession {
             state: StateDisconnected {},
         })
@@ -227,14 +225,14 @@ impl MQTTSession<StateConnected> {
     pub fn connect<T: Write, U: Read>(
         self,
         modem: &mut Modem<'_, T, U>,
-        connection_settings: &MQTTConnectionSettings,
+        connection_settings: MQTTConnectionSettings,
     ) -> Result<MQTTSession<StateConnectedGood>, AtError> {
-        let mqtt_connection_id = self.state.mqtt_connection_id;
-
-        match modem.send_and_wait_reply(connection_settings) {
+        let mqtt_id = self.state.mqtt_id;
+        let connection_settings = connection_settings.with_mqtt_id(mqtt_id);
+        match modem.send_and_wait_reply(&connection_settings) {
             Ok(response) => match response {
                 AtResponse::Ok => Ok(MQTTSession {
-                    state: StateConnectedGood { mqtt_connection_id },
+                    state: StateConnectedGood { mqtt_id },
                 }),
                 _ => {
                     #[cfg(feature = "defmt")]
@@ -254,7 +252,7 @@ impl MQTTSession<StateConnectedGood> {
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
         modem
             .send_and_wait_reply(&CloseMQTTConnection {
-                mqtt_id: self.state.mqtt_connection_id,
+                mqtt_id: self.state.mqtt_id,
             })
             .expect("TODO: panic message");
         Ok(MQTTSession {
@@ -269,7 +267,7 @@ impl MQTTSession<StateConnectedGood> {
     ) -> Result<(), MQTTError> {
         modem
             .send_and_wait_reply(&MQTTPublish {
-                mqtt_id: self.state.mqtt_connection_id,
+                mqtt_id: self.state.mqtt_id,
                 topic: message.topic,
                 qos: message.qos,
                 retained: message.retained,
@@ -295,10 +293,10 @@ impl MQTTConnection {
     ) -> Result<(), MQTTError> {
         match self {
             MQTTConnection::Disconnected => Err(MQTTError::Disconnected),
-            MQTTConnection::Connected(mqtt_connection_id) => {
+            MQTTConnection::Connected(mqtt_id) => {
                 modem
                     .send_and_wait_reply(&MQTTPublish {
-                        mqtt_id: *mqtt_connection_id,
+                        mqtt_id: *mqtt_id,
                         topic: message.topic,
                         qos: message.qos,
                         retained: message.retained,
@@ -452,8 +450,20 @@ pub struct WillOptions<'a> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct MQTTConnectionSettingsWithID<'a> {
+    mqtt_id: u8,
+    version: MQTTVersion,
+    client_id: &'a str,
+    keepalive_interval: u16, // 0 - 64800
+    clean_session: bool,
+    will_flag: bool,
+    // pub will_options: Option<WillOptions>,
+    username: &'a str,
+    password: &'a str,
+}
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct MQTTConnectionSettings<'a> {
-    pub mqtt_id: u8,
     pub version: MQTTVersion,
     pub client_id: &'a str,
     pub keepalive_interval: u16, // 0 - 64800
@@ -464,7 +474,22 @@ pub struct MQTTConnectionSettings<'a> {
     pub password: &'a str,
 }
 
-impl AtRequest for MQTTConnectionSettings<'_> {
+impl<'a> MQTTConnectionSettings<'a> {
+    fn with_mqtt_id(self, mqtt_id: u8) -> MQTTConnectionSettingsWithID<'a> {
+        MQTTConnectionSettingsWithID {
+            mqtt_id,
+            version: self.version,
+            client_id: self.client_id,
+            keepalive_interval: self.keepalive_interval,
+            clean_session: self.clean_session,
+            will_flag: self.will_flag,
+            username: self.username,
+            password: self.password,
+        }
+    }
+}
+
+impl AtRequest for MQTTConnectionSettingsWithID<'_> {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {

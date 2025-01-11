@@ -278,8 +278,7 @@ where
         delay.delay_ms(1000);
         let mqtt_connection = mqtt_session
             .connect(
-                &MQTTConnectionSettings {
-                    mqtt_id: 0, // mqtt_id should be taken from session!
+                MQTTConnectionSettings {
                     version: MQTTVersion::MQTT31,
                     client_id: "nbiot",
                     keepalive_interval: 0,
