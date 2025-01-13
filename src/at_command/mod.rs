@@ -28,6 +28,7 @@ pub mod clock;
 pub mod cmee;
 pub(crate) mod flow_control;
 pub mod http;
+pub mod ip_address;
 pub mod model_identification;
 pub mod mqtt;
 pub mod network_information;
@@ -36,6 +37,7 @@ pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
 pub mod sleep_indication;
+pub mod wireless;
 
 type BufferType = [u8; BUFFER_SIZE];
 
@@ -60,6 +62,7 @@ pub enum AtResponse {
     PowerSavingMode(PowerSavingModeState),
     BatteryCharge(BatteryChargeStatus),
     ControlFlow(ControlFlowStatus, ControlFlowStatus),
+    LocalIPAddress(i32),
 }
 
 pub trait AtRequest {
