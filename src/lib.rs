@@ -1,5 +1,6 @@
-#![no_std]
-#![no_main]
+// make `std` available when testing
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 
 pub mod at_command;
 #[cfg(feature = "nonblocking")]
@@ -39,6 +40,7 @@ pub enum AtError {
     NotReady,
     IOError,
     AtParseError,
+    ConnectSocketError,
 }
 
 impl From<ParseError> for AtError {
