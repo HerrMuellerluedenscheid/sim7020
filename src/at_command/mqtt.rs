@@ -321,7 +321,7 @@ pub struct MQTTSessionSettings<'a> {
 }
 
 impl MQTTSessionSettings<'_> {
-    pub fn new(server: &str, port: u16) -> MQTTSessionSettings {
+    pub fn new(server: &str, port: u16) -> MQTTSessionSettings<'_> {
         let timeout_ms = 5000;
         let buffer_size = 600;
         MQTTSessionSettings {
