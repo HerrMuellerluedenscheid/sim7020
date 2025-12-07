@@ -339,7 +339,7 @@ impl MQTTSessionSettings<'_> {
     }
 
     pub fn with_buffer_size(mut self, buffer_size: u16) -> Self {
-        if buffer_size < 20 || buffer_size > 1132 {
+        if !(20..=1132).contains(&buffer_size) {
             panic!("buffer size must be between 20 and 1132");
         }
         self.buffer_size = buffer_size;
