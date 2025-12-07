@@ -37,6 +37,7 @@ pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
 pub mod sleep_indication;
+pub mod socket;
 pub mod wireless;
 
 type BufferType = [u8; BUFFER_SIZE];
@@ -63,6 +64,8 @@ pub enum AtResponse {
     BatteryCharge(BatteryChargeStatus),
     ControlFlow(ControlFlowStatus, ControlFlowStatus),
     LocalIPAddress(i32),
+    SocketCreated(u8),
+    SocketConnected,
 }
 
 pub trait AtRequest {
