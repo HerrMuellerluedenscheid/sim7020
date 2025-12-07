@@ -88,7 +88,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
         assert!(self.port > 0);
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOCON")
-            .with_int_parameter(self.socket_id as u8)
+            .with_int_parameter(self.socket_id)
             .with_int_parameter(self.port as i32)
             .with_string_parameter(self.remote_address)
             .with_int_parameter(self.connection_type as u8);
@@ -122,7 +122,7 @@ impl AtRequest for SendSocketMessage<'_> {
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
-            .with_int_parameter(self.socket_id as u8)
+            .with_int_parameter(self.socket_id)
             .with_int_parameter(self.data_len)
             .with_raw_parameter(self.data);
 
@@ -151,7 +151,7 @@ impl AtRequest for CloseSocket {
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOCL")
-            .with_int_parameter(self.socket_id as u8);
+            .with_int_parameter(self.socket_id);
 
         builder.finish()
     }
