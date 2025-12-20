@@ -108,11 +108,11 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 /// Struct used to send data through the socket
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
-    socket_id: u8,
+    pub socket_id: u8,
     /// Length of the data we want to send
-    data_len: u16,
+    pub data_len: u16,
     /// Data to be send
-    data: &'a [u8],
+    pub data: &'a [u8],
 }
 
 impl AtRequest for SendSocketMessage<'_> {
