@@ -7,6 +7,7 @@ pub struct PINRequired;
 
 /// Indicates the response of [PinRequired]
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum PinStatus {
     Ready,
     SimPin,
