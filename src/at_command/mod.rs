@@ -1,4 +1,5 @@
 use crate::at_command::at_cgatt::GPRSServiceState;
+use crate::at_command::at_cpin::PinStatus;
 use crate::at_command::battery::BatteryChargeStatus;
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::mqtt::UsedState;
@@ -66,6 +67,7 @@ pub enum AtResponse {
     LocalIPAddress(i32),
     SocketCreated(u8),
     SocketConnected,
+    PinStatus(PinStatus),
 }
 
 pub trait AtRequest {
