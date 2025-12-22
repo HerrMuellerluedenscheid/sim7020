@@ -60,7 +60,7 @@ impl AtRequest for CreateSocket {
 
     fn parse_response(&self, _data: &[u8]) -> Result<super::AtResponse, AtError> {
         let socket_id = at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"+CSOC ")
+            .expect_identifier(b"+CSOC: ")
             .expect_int_parameter()
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()?;
@@ -98,8 +98,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 
     fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
         at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"+CSOCON ")
-            .expect_identifier(b"OK")
+            .expect_identifier(b"OK\r\n")
             .finish()?;
 
         Ok(AtResponse::Ok)
@@ -109,11 +108,11 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 /// Struct used to send data through the socket
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
-    socket_id: u8,
+    pub socket_id: u8,
     /// Length of the data we want to send
-    data_len: u16,
+    pub data_len: u16,
     /// Data to be send
-    data: &'a [u8],
+    pub data: &'a [u8],
 }
 
 impl AtRequest for SendSocketMessage<'_> {
@@ -131,8 +130,7 @@ impl AtRequest for SendSocketMessage<'_> {
 
     fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
         at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"+CSOSEND ")
-            .expect_identifier(b"OK")
+            .expect_identifier(b"OK\r\n")
             .finish()?;
 
         Ok(AtResponse::Ok)
@@ -206,7 +204,7 @@ mod test {
         };
 
         // Response example: +CSOC 5\r\n\r\nOK\r\n
-        let response = b"+CSOC 5\r\n\r\nOK\r\n";
+        let response = b"+CSOC: 5\r\n\r\nOK\r\n";
 
         let parsed = create_socket.parse_response(response).unwrap();
 
@@ -247,7 +245,7 @@ mod test {
             remote_address: "127.0.0.1",
         };
 
-        let result = at_connect_request.get_command(&mut buffer).unwrap();
+        at_connect_request.get_command(&mut buffer).unwrap();
     }
 
     #[test]
