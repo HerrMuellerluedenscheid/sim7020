@@ -28,8 +28,8 @@ impl From<i32> for PDPState {
 pub struct PDPContext;
 
 pub struct PDPContextResponse {
-    state: PDPState,
-    context: i32,
+    pub state: PDPState,
+    pub context: i32,
 }
 
 impl PDPContext {

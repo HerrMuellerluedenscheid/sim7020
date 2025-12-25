@@ -119,12 +119,12 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        verify_ok(data);
+        verify_ok(data)?;
         Ok(AtResponse::Ok)
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        verify_ok(data);
+        verify_ok(data)?;
         Ok(())
     }
 }
