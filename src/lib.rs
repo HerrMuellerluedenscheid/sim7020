@@ -41,11 +41,18 @@ pub enum AtError {
     IOError,
     AtParseError,
     ConnectSocketError,
+    CapacityError,
 }
 
 impl From<ParseError> for AtError {
     fn from(_: ParseError) -> AtError {
         AtError::AtParseError
+    }
+}
+
+impl From<heapless::CapacityError> for AtError {
+    fn from(_: heapless::CapacityError) -> Self {
+        AtError::CapacityError
     }
 }
 
