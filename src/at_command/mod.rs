@@ -44,6 +44,7 @@ pub mod wireless;
 type BufferType = [u8; BUFFER_SIZE];
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
 pub enum AtResponse {
     Ok,
     ModelIdentifier([u8; 8]),
@@ -79,9 +80,15 @@ pub trait AtRequest {
         self.get_command(buffer).expect("buffer too small")
     }
 
+    #[deprecated(since = "3.0.0", note = "Migrate to parse_response_struct")]
+    #[allow(deprecated)]
     fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
         #[cfg(feature = "defmt")]
         debug!("default parsing: {=[u8]:a}", _data);
         Ok(AtResponse::Ok)
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        todo!("Not implemented yet for this type")
     }
 }
