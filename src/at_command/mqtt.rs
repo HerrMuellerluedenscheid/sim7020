@@ -1,5 +1,7 @@
 use crate::at_command::mqtt::MQTTSessionWrapper::Disconnected;
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
@@ -195,17 +197,10 @@ impl MQTTSession<StateDisconnected> {
     ) -> Result<MQTTSession<StateConnected>, AtError> {
         #[cfg(feature = "defmt")]
         info!("Creating new session");
-        match modem.send_and_wait_reply(session_settings) {
-            Ok(AtResponse::MQTTSessionCreated(mqtt_id)) => Ok(MQTTSession {
-                state: StateConnected { mqtt_id },
-            }),
-            Ok(_response) => {
-                #[cfg(feature = "defmt")]
-                error!("unexpected response from mqtt modem: {:?}", _response);
-                Err(AtError::ErrorReply(0))
-            }
-            Err(e) => Err(e),
-        }
+        let mqtt_id = modem.send_and_wait_response(session_settings)?.mqtt_id;
+        return Ok(MQTTSession {
+            state: StateConnected { mqtt_id },
+        });
     }
 }
 
@@ -214,7 +209,7 @@ impl MQTTSession<StateConnected> {
         &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
-        modem.send_and_wait_reply(&CloseMQTTConnection {
+        modem.send_and_wait_response(&CloseMQTTConnection {
             mqtt_id: self.state.mqtt_id,
         })?;
         Ok(MQTTSession {
@@ -229,19 +224,10 @@ impl MQTTSession<StateConnected> {
     ) -> Result<MQTTSession<StateConnectedGood>, AtError> {
         let mqtt_id = self.state.mqtt_id;
         let connection_settings = connection_settings.with_mqtt_id(mqtt_id);
-        match modem.send_and_wait_reply(&connection_settings) {
-            Ok(response) => match response {
-                AtResponse::Ok => Ok(MQTTSession {
-                    state: StateConnectedGood { mqtt_id },
-                }),
-                _ => {
-                    #[cfg(feature = "defmt")]
-                    error!("unexpected response from mqtt modem: {:?}", response);
-                    Err(AtError::ErrorReply(0))
-                }
-            },
-            Err(e) => Err(e),
-        }
+        modem.send_and_wait_response(&connection_settings)?;
+        return Ok(MQTTSession {
+            state: StateConnectedGood { mqtt_id },
+        });
     }
 }
 
@@ -250,11 +236,9 @@ impl MQTTSession<StateConnectedGood> {
         &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
-        modem
-            .send_and_wait_reply(&CloseMQTTConnection {
-                mqtt_id: self.state.mqtt_id,
-            })
-            .expect("TODO: panic message");
+        modem.send_and_wait_response(&CloseMQTTConnection {
+            mqtt_id: self.state.mqtt_id,
+        })?;
         Ok(MQTTSession {
             state: StateDisconnected {},
         })
@@ -266,7 +250,7 @@ impl MQTTSession<StateConnectedGood> {
         modem: &mut Modem<'_, T, U>,
     ) -> Result<(), MQTTError> {
         modem
-            .send_and_wait_reply(&MQTTPublish {
+            .send_and_wait_response(&MQTTPublish {
                 mqtt_id: self.state.mqtt_id,
                 topic: message.topic,
                 qos: message.qos,
@@ -295,7 +279,7 @@ impl MQTTConnection {
             MQTTConnection::Disconnected => Err(MQTTError::Disconnected),
             MQTTConnection::Connected(mqtt_id) => {
                 modem
-                    .send_and_wait_reply(&MQTTPublish {
+                    .send_and_wait_response(&MQTTPublish {
                         mqtt_id: *mqtt_id,
                         topic: message.topic,
                         qos: message.qos,
@@ -352,8 +336,24 @@ impl MQTTSessionSettings<'_> {
     }
 }
 
+pub struct MqttSessionId {
+    pub mqtt_id: u8,
+}
+
+impl MQTTSessionSettings<'_> {
+    fn get_session_id(data: &[u8]) -> Result<u8, AtError> {
+        let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CMQNEW: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
+
+        return Ok(mqtt_id as u8);
+    }
+}
+
 impl AtRequest for MQTTSessionSettings<'_> {
-    type Response = ();
+    type Response = MqttSessionId;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
@@ -366,14 +366,15 @@ impl AtRequest for MQTTSessionSettings<'_> {
             .finish()
     }
 
+    #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CMQNEW: ")
-            .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK")
-            .finish()?;
-
+        let mqtt_id = Self::get_session_id(data)?;
         Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let mqtt_id = Self::get_session_id(data)?;
+        return Ok(MqttSessionId { mqtt_id });
     }
 }
 
@@ -395,8 +396,28 @@ impl From<i32> for UsedState {
 
 pub struct GetMQTTSession {}
 
+pub struct GetMQTTSessionResponse {
+    pub mqtt_id: u8,
+    pub used_state: UsedState,
+    pub server: heapless::String<MAX_SERVER_LEN>,
+}
+
+impl GetMQTTSession {
+    fn get_data<'a>(data: &'a [u8]) -> Result<(i32, i32, &'a str), AtError> {
+        let tuple = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CMQNEW: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
+
+        return Ok(tuple);
+    }
+}
+
 impl AtRequest for GetMQTTSession {
-    type Response = ();
+    type Response = GetMQTTSessionResponse;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         CommandBuilder::create_query(buffer, true)
@@ -404,14 +425,9 @@ impl AtRequest for GetMQTTSession {
             .finish()
     }
 
+    #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (mqtt_id, used_state, server) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CMQNEW: ")
-            .expect_int_parameter()
-            .expect_int_parameter()
-            .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK")
-            .finish()?;
+        let (mqtt_id, used_state, server) = Self::get_data(data)?;
         let mut server_str: [u8; MAX_SERVER_LEN] = [0; MAX_SERVER_LEN];
         let chars = server.len().min(MAX_SERVER_LEN);
         server_str[..chars].copy_from_slice(&server.as_bytes()[..chars]);
@@ -420,6 +436,17 @@ impl AtRequest for GetMQTTSession {
             UsedState::from(used_state),
             server_str,
         ))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let (mqtt_id, used_state, server) = Self::get_data(data)?;
+        let server: heapless::String<MAX_SERVER_LEN> = server.try_into()?;
+        let used_state: UsedState = used_state.into();
+        return Ok(GetMQTTSessionResponse {
+            mqtt_id: mqtt_id as u8,
+            used_state: used_state,
+            server,
+        });
     }
 }
 
@@ -436,6 +463,10 @@ impl AtRequest for CloseMQTTConnection {
             .named("+CMQDISCON")
             .with_int_parameter(self.mqtt_id)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -512,6 +543,10 @@ impl AtRequest for MQTTConnectionSettingsWithID<'_> {
             .with_string_parameter(self.password)
             .finish()
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -538,6 +573,10 @@ impl AtRequest for MQTTRawData {
             .named("+CREVHEX")
             .with_string_parameter(format)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -581,6 +620,10 @@ impl AtRequest for MQTTPublish<'_> {
             .with_string_parameter(self.message)
             .finish()
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -600,5 +643,9 @@ impl AtRequest for MQTTSubscribe<'_> {
             .with_string_parameter(self.topic)
             .with_int_parameter(self.qos)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }

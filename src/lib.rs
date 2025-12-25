@@ -113,6 +113,29 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
         Ok(())
     }
 
+    pub fn send_and_wait_response<'b, V: AtRequest + 'b>(
+        &'b mut self,
+        payload: &V,
+    ) -> Result<V::Response, AtError> {
+        #[cfg(feature = "defmt")]
+        info!("Sending command to the modem");
+
+        let mut buffer = [0; BUFFER_SIZE];
+        let data = payload.get_command_no_error(&mut buffer);
+
+        #[cfg(feature = "defmt")]
+        debug!("sending command: {=[u8]:a}", data);
+
+        self.writer.write(data).map_err(|_e| AtError::IOError)?;
+
+        let mut read_buffer = [0; BUFFER_SIZE];
+        let response_size = self.read_response(&mut read_buffer)?;
+        let response = payload.parse_response_struct(&read_buffer[..response_size])?;
+
+        return Ok(response);
+    }
+
+    #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]
     pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
         &'b mut self,
         payload: &V,
