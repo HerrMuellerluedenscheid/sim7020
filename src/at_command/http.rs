@@ -1,7 +1,12 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::builder::CommandBuilder;
 use at_commands::parser::CommandParser;
+
+#[cfg(feature = "defmt")]
+use defmt::*;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
@@ -15,12 +20,43 @@ pub struct HttpSession<'a> {
     pub host: &'a str,
 }
 
+const HTTP_SESSION_SUCCESSFULLY: i32 = 1;
+const HTTP_SESSION_FAILED: i32 = 0;
+const DEFAULT_N_SESSIONS: usize = 4;
+
 /// create a HTTP or HTTPS session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct GetHttpSessions {}
+pub struct GetHttpSessions<
+    const N_SESSIONS: usize = DEFAULT_N_SESSIONS,
+    const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE,
+> {}
 
-impl AtRequest for GetHttpSessions {
-    type Response = ();
+pub enum HttpSessionState {
+    Sucessfully,
+    Failed,
+}
+
+impl From<i32> for HttpSessionState {
+    fn from(value: i32) -> Self {
+        match value {
+            HTTP_SESSION_SUCCESSFULLY => HttpSessionState::Sucessfully,
+            HTTP_SESSION_FAILED => HttpSessionState::Failed,
+            _ => unreachable!(),
+        }
+    }
+}
+
+const DEFAULT_HOST_MAX_SIZE: usize = 255;
+
+pub struct HttpSessionInformation<const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE> {
+    pub http_client_id: i32,
+    pub state: HttpSessionState,
+    pub host: heapless::String<HOST_MAX_SIZE>,
+}
+
+// TODO: We will add a simple implementation for 4 items. We should find a way to implement a way to get N items
+impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSIONS, HOST_MAX_SIZE> {
+    type Response = [HttpSessionInformation<HOST_MAX_SIZE>; DEFAULT_N_SESSIONS];
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let cmd = CommandBuilder::create_query(buffer, true)
@@ -29,6 +65,7 @@ impl AtRequest for GetHttpSessions {
         cmd
     }
 
+    #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let connections = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CHTTPCREATE: ")
@@ -60,6 +97,62 @@ impl AtRequest for GetHttpSessions {
             state3 != 0,
         ))
     }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Parsing {} http responses");
+        let connections = CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_int_parameter()
+            .expect_raw_string()
+            .finish()?;
+        let (cid0, state0, host0, cid1, state1, host1, cid2, state2, host2, cid3, state3, host3) =
+            connections;
+
+        let http_session_0: HttpSessionInformation<HOST_MAX_SIZE> = HttpSessionInformation {
+            http_client_id: cid0,
+            state: state0.into(),
+            host: host0.try_into()?,
+        };
+
+        let http_session_1: HttpSessionInformation<HOST_MAX_SIZE> = HttpSessionInformation {
+            http_client_id: cid1,
+            state: state1.into(),
+            host: host1.try_into()?,
+        };
+
+        let http_session_2: HttpSessionInformation<HOST_MAX_SIZE> = HttpSessionInformation {
+            http_client_id: cid2,
+            state: state2.into(),
+            host: host2.try_into()?,
+        };
+
+        let http_session_3: HttpSessionInformation<HOST_MAX_SIZE> = HttpSessionInformation {
+            http_client_id: cid3,
+            state: state3.into(),
+            host: host3.try_into()?,
+        };
+
+        return Ok([
+            http_session_0,
+            http_session_1,
+            http_session_2,
+            http_session_3,
+        ]);
+    }
 }
 
 /// create a HTTP or HTTPS session
@@ -70,8 +163,24 @@ pub struct CreateHttpSession<'a> {
     pub password: Option<&'a str>,
 }
 
+pub struct CreateHttpSessionResponse {
+    pub client_id: u8,
+}
+
+impl CreateHttpSession<'_> {
+    fn get_client_id(data: &[u8]) -> Result<u8, AtError> {
+        let (client_id,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()?;
+
+        return Ok(client_id as u8);
+    }
+}
+
 impl AtRequest for CreateHttpSession<'_> {
-    type Response = Result<(), AtError>;
+    type Response = CreateHttpSessionResponse;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -83,13 +192,15 @@ impl AtRequest for CreateHttpSession<'_> {
             .finish()
     }
 
+    #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (client_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
-            .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()?;
+        let client_id = Self::get_client_id(data)?;
         Ok(AtResponse::HTTPSessionCreated(client_id as u8))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let client_id = Self::get_client_id(data)?;
+        Ok(CreateHttpSessionResponse { client_id })
     }
 }
 
@@ -100,13 +211,17 @@ pub struct HttpConnect {
 }
 
 impl AtRequest for HttpConnect {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPCON")
             .with_int_parameter(self.client_id)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -117,13 +232,17 @@ pub struct HttpDisconnect {
 }
 
 impl AtRequest for HttpDisconnect {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPDISCON")
             .with_int_parameter(self.client_id)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -134,13 +253,17 @@ pub struct HttpDestroy {
 }
 
 impl AtRequest for HttpDestroy {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPDESTROY")
             .with_int_parameter(self.client_id)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -164,7 +287,7 @@ pub struct HttpSend<'a> {
 }
 
 impl AtRequest for HttpSend<'_> {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let method: u8 = match self.method {
@@ -183,5 +306,9 @@ impl AtRequest for HttpSend<'_> {
             // .with_optional_string_parameter(self.content_type)
             // .with_optional_string_parameter(self.content_string)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
