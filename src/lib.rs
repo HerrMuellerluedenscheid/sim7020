@@ -12,6 +12,8 @@ use crate::at_command::http::HttpClient;
 use at_command::AtRequest;
 use at_command::AtResponse;
 use at_commands::parser::ParseError;
+use chrono::NaiveDateTime;
+use chrono::ParseResult;
 #[cfg(feature = "defmt")]
 use defmt::*;
 #[cfg(feature = "defmt")]
@@ -42,6 +44,7 @@ pub enum AtError {
     AtParseError,
     ConnectSocketError,
     CapacityError,
+    ParseClockError(chrono::format::ParseError),
 }
 
 impl From<ParseError> for AtError {
@@ -53,6 +56,12 @@ impl From<ParseError> for AtError {
 impl From<heapless::CapacityError> for AtError {
     fn from(_: heapless::CapacityError) -> Self {
         AtError::CapacityError
+    }
+}
+
+impl From<chrono::format::ParseError> for AtError {
+    fn from(value: chrono::format::ParseError) -> Self {
+        AtError::ParseClockError(value)
     }
 }
 
