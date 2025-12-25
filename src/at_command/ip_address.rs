@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 #[cfg(feature = "defmt")]
@@ -7,8 +9,14 @@ use defmt::info;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct LocalIPAddress;
 
+const MAX_IP_SIZE: usize = 39;
+
+pub struct LocalIpAddressResponse {
+    pub ip: heapless::String<MAX_IP_SIZE>,
+}
+
 impl AtRequest for LocalIPAddress {
-    type Response = Result<(), AtError>;
+    type Response = LocalIpAddressResponse;
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_execute(buffer, true)
@@ -16,6 +24,7 @@ impl AtRequest for LocalIPAddress {
             .finish()
     }
 
+    #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let (local_ip,) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CIFSR: ")
@@ -25,5 +34,18 @@ impl AtRequest for LocalIPAddress {
         #[cfg(feature = "defmt")]
         info!("localip: {}", local_ip);
         Ok(AtResponse::LocalIPAddress(local_ip))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let (local_ip,) = CommandParser::parse(data)
+            .expect_identifier(b"\r\n+CIFSR: ")
+            .expect_raw_string()
+            .expect_identifier(b"\r\n\r\nOK")
+            .finish()?;
+        #[cfg(feature = "defmt")]
+        info!("localip: {}", local_ip);
+        let ip: heapless::String<MAX_IP_SIZE> = local_ip.try_into()?;
+
+        return Ok(LocalIpAddressResponse { ip });
     }
 }
