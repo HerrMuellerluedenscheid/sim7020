@@ -41,7 +41,7 @@ impl From<i32> for HttpSessionState {
         match value {
             HTTP_SESSION_SUCCESSFULLY => HttpSessionState::Sucessfully,
             HTTP_SESSION_FAILED => HttpSessionState::Failed,
-            _ => unreachable!(),
+            _ => core::unreachable!(),
         }
     }
 }
@@ -100,7 +100,7 @@ impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSION
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         #[cfg(feature = "defmt")]
-        debug!("Parsing {} http responses");
+        debug!("Parsing {} http responses", data);
         let connections = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CHTTPCREATE: ")
             .expect_int_parameter()

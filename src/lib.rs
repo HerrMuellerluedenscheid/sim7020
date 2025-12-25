@@ -45,7 +45,7 @@ pub enum AtError {
     AtParseError,
     ConnectSocketError,
     CapacityError,
-    ParseClockError(chrono::format::ParseError),
+    ParseClockError,
 }
 
 impl From<ParseError> for AtError {
@@ -61,8 +61,8 @@ impl From<heapless::CapacityError> for AtError {
 }
 
 impl From<chrono::format::ParseError> for AtError {
-    fn from(value: chrono::format::ParseError) -> Self {
-        AtError::ParseClockError(value)
+    fn from(_: chrono::format::ParseError) -> Self {
+        AtError::ParseClockError
     }
 }
 

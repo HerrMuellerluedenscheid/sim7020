@@ -48,7 +48,6 @@ pub struct NetworkInformation;
 
 const OPERATOR_MAX_SIZE: usize = 16;
 
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub type NetworkOperator = heapless::String<OPERATOR_MAX_SIZE>;
 
 pub struct NetworkInformationState {
