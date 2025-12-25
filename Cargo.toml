@@ -9,17 +9,17 @@ repository = "https://github.com/HerrMuellerluedenscheid/sim7020"
 description = "driver for sim7020E NB IoT modem"
 
 [dependencies]
-defmt = { version = "0.3", optional = true}
-embedded-io = { version = "0.6.1", default-features = false, optional = false}
+defmt = { version = "1.0.1", optional = true }
+embedded-io = { version = "0.7.1", default-features = false, optional = false }
 at-commands = "0.5.4"
-embedded-io-async = { version = "0.6.1", optional = true }
-chrono = { version = "0.4.38", default-features = false}
+embedded-io-async = { version = "0.7.0", optional = true }
+chrono = { version = "0.4.38", default-features = false }
 log = "0.4.22"
 
 [features]
 default = []
 nonblocking = ["embedded-io-async"]
-defmt = ["dep:defmt", "embedded-io/defmt-03"]
+defmt = ["dep:defmt", "embedded-io/defmt"]
 
 # cargo build/run
 [profile.dev]
