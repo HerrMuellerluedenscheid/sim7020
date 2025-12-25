@@ -32,7 +32,7 @@ impl SleepIndicationStatus {
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
         let state = SleepIndication::from(state);
-        return Ok(state);
+        Ok(state)
     }
 }
 
@@ -53,6 +53,6 @@ impl AtRequest for SleepIndicationStatus {
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let state = Self::get_status(data)?;
-        return Ok(state);
+        Ok(state)
     }
 }

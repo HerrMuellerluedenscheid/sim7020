@@ -18,7 +18,7 @@ impl Clock {
         // these zone infos
         let timestamp = NaiveDateTime::parse_from_str(&parsed[..17], "%y/%m/%d,%H:%M:%S")?;
 
-        return Ok(timestamp);
+        Ok(timestamp)
     }
 }
 

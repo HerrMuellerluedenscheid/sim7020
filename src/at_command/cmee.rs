@@ -17,7 +17,7 @@ impl ReportMobileEquipmentError {
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()?;
 
-        return Ok(setting);
+        Ok(setting)
     }
 }
 
@@ -48,7 +48,7 @@ impl AtRequest for ReportMobileEquipmentError {
         let setting = Self::get_setting(data)?;
         let setting: ReportMobileEquipmentErrorSetting = setting.into();
 
-        return Ok(setting);
+        Ok(setting)
     }
 }
 

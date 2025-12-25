@@ -4,20 +4,6 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 
-#[allow(dead_code)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct NetworkOperator([u8; 10]);
-
-impl From<&str> for NetworkOperator {
-    fn from(value: &str) -> Self {
-        let mut data = [0; 10];
-        let vab = value.as_bytes();
-        let len = vab.len().min(data.len());
-        data[..len].copy_from_slice(&vab[..len]);
-        Self(data)
-    }
-}
-
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum NetworkFormat {
     LongAlphanumeric,
@@ -62,19 +48,18 @@ pub struct NetworkInformation;
 
 const OPERATOR_MAX_SIZE: usize = 16;
 
-pub type OperatorName = heapless::String<OPERATOR_MAX_SIZE>;
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub type NetworkOperator = heapless::String<OPERATOR_MAX_SIZE>;
 
 pub struct NetworkInformationState {
     pub mode: NetworkMode,
     pub format: NetworkFormat,
-    pub operator: Option<OperatorName>,
+    pub operator: Option<NetworkOperator>,
 }
 
 impl NetworkInformation {
-    fn get_network_info(
-        data: &[u8],
-    ) -> Result<(i32, Option<i32>, Option<&str>, Option<i32>), AtError> {
-        let tuple = CommandParser::parse(data)
+    fn get_network_info(data: &[u8]) -> Result<NetworkInformationState, AtError> {
+        let (mode, format, operator, _access_technology) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+COPS: ")
             .expect_int_parameter()
             .expect_optional_int_parameter()
@@ -83,7 +68,20 @@ impl NetworkInformation {
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
 
-        return Ok(tuple);
+        let mode = NetworkMode::from(mode);
+
+        let format = match format {
+            Some(form) => NetworkFormat::from(form),
+            None => NetworkFormat::Unknown,
+        };
+
+        let operator: Option<NetworkOperator> = operator.map(|x| x.try_into()).transpose()?;
+
+        Ok(NetworkInformationState {
+            format,
+            mode,
+            operator,
+        })
     }
 }
 
@@ -98,32 +96,16 @@ impl AtRequest for NetworkInformation {
 
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let (mode, format, operator, _access_technology) = Self::get_network_info(data)?;
-        let mode = NetworkMode::from(mode);
-
-        let format = match format {
-            Some(form) => NetworkFormat::from(form),
-            None => NetworkFormat::Unknown,
-        };
-        let operator = operator.map(NetworkOperator::from);
-        Ok(AtResponse::NetworkInformationState(mode, format, operator))
+        let network = Self::get_network_info(data)?;
+        Ok(AtResponse::NetworkInformationState(
+            network.mode,
+            network.format,
+            network.operator,
+        ))
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        let (mode, format, operator, _access_technology) = Self::get_network_info(data)?;
-        let mode = NetworkMode::from(mode);
-
-        let format = match format {
-            Some(form) => NetworkFormat::from(form),
-            None => NetworkFormat::Unknown,
-        };
-
-        let operator: Option<OperatorName> = operator.map(|x| x.try_into()).transpose()?;
-
-        return Ok(Self::Response {
-            format: format,
-            mode: mode,
-            operator: operator,
-        });
+        let network = Self::get_network_info(data)?;
+        Ok(network)
     }
 }

@@ -87,7 +87,7 @@ impl GetFlowControl {
             .expect_raw_string()
             .finish()?;
 
-        return Ok((dce_by_dte.into(), dte_by_dce.into()));
+        Ok((dce_by_dte.into(), dte_by_dce.into()))
     }
 }
 
@@ -115,8 +115,8 @@ impl AtRequest for GetFlowControl {
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let (dce_by_dte, dte_by_dce) = Self::parse_data(data)?;
         Ok(GetFlowControlResponse {
-            dce_by_dte: dce_by_dte,
-            dte_by_dce: dte_by_dce,
+            dce_by_dte,
+            dte_by_dce,
         })
     }
 }

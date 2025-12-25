@@ -43,9 +43,9 @@ impl AtRequest for SignalQualityReport {
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let (rx_signal_strength, rx_quality) = Self::get_signal_response(data)?;
-        return Ok(SignalQualityResponse {
-            rx_quality: rx_quality,
-            rx_signal_strength: rx_signal_strength,
-        });
+        Ok(SignalQualityResponse {
+            rx_quality,
+            rx_signal_strength,
+        })
     }
 }

@@ -36,7 +36,7 @@ impl GetPowerSavingMode {
             .finish()?;
         let state = PowerSavingModeState::from(state);
 
-        return Ok(state);
+        Ok(state)
     }
 }
 
@@ -57,7 +57,7 @@ impl AtRequest for GetPowerSavingMode {
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let state = Self::parse_state(data)?;
-        return Ok(state);
+        Ok(state)
     }
 }
 
@@ -74,7 +74,7 @@ impl SetPowerSavingMode {
             .finish()?;
         let state = PowerSavingModeState::from(state);
 
-        return Ok(state);
+        Ok(state)
     }
 }
 
@@ -95,6 +95,6 @@ impl AtRequest for SetPowerSavingMode {
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let state = Self::parse_state(data)?;
-        return Ok(state);
+        Ok(state)
     }
 }

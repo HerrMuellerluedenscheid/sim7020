@@ -146,12 +146,12 @@ impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSION
             host: host3.try_into()?,
         };
 
-        return Ok([
+        Ok([
             http_session_0,
             http_session_1,
             http_session_2,
             http_session_3,
-        ]);
+        ])
     }
 }
 
@@ -175,7 +175,7 @@ impl CreateHttpSession<'_> {
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()?;
 
-        return Ok(client_id as u8);
+        Ok(client_id as u8)
     }
 }
 
@@ -195,7 +195,7 @@ impl AtRequest for CreateHttpSession<'_> {
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let client_id = Self::get_client_id(data)?;
-        Ok(AtResponse::HTTPSessionCreated(client_id as u8))
+        Ok(AtResponse::HTTPSessionCreated(client_id))
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {

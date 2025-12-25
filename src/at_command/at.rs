@@ -10,7 +10,7 @@ use defmt::{error, info};
 pub struct At {}
 
 impl At {
-    fn get_command_response<'a>(data: &'a [u8]) -> Result<(&'a str, &'a str), AtError> {
+    fn get_command_response(data: &[u8]) -> Result<(&str, &str), AtError> {
         let tuple = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"AT\r\r\n")
             .expect_raw_string()
@@ -23,7 +23,7 @@ impl At {
                 error!("Failed to parse response: {=[u8]:a}", data);
             })?;
 
-        return Ok(tuple);
+        Ok(tuple)
     }
 }
 

@@ -42,7 +42,7 @@ impl PDPContext {
             .finish()?;
         let state = PDPState::from(state);
 
-        return Ok((state, context));
+        Ok((state, context))
     }
 }
 
@@ -68,6 +68,6 @@ impl AtRequest for PDPContext {
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let (state, context) = Self::get_status(data)?;
-        return Ok(PDPContextResponse { state, context });
+        Ok(PDPContextResponse { state, context })
     }
 }

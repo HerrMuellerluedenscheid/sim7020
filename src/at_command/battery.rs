@@ -27,7 +27,7 @@ impl BatteryCharge {
             voltage_millivolt,
         };
 
-        return Ok(status);
+        Ok(status)
     }
 }
 
@@ -47,6 +47,6 @@ impl AtRequest for BatteryCharge {
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        return Self::get_battery_charge_status(data);
+        Self::get_battery_charge_status(data)
     }
 }

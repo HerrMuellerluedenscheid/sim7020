@@ -198,9 +198,9 @@ impl MQTTSession<StateDisconnected> {
         #[cfg(feature = "defmt")]
         info!("Creating new session");
         let mqtt_id = modem.send_and_wait_response(session_settings)?.mqtt_id;
-        return Ok(MQTTSession {
+        Ok(MQTTSession {
             state: StateConnected { mqtt_id },
-        });
+        })
     }
 }
 
@@ -225,9 +225,9 @@ impl MQTTSession<StateConnected> {
         let mqtt_id = self.state.mqtt_id;
         let connection_settings = connection_settings.with_mqtt_id(mqtt_id);
         modem.send_and_wait_response(&connection_settings)?;
-        return Ok(MQTTSession {
+        Ok(MQTTSession {
             state: StateConnectedGood { mqtt_id },
-        });
+        })
     }
 }
 
@@ -348,7 +348,7 @@ impl MQTTSessionSettings<'_> {
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
 
-        return Ok(mqtt_id as u8);
+        Ok(mqtt_id as u8)
     }
 }
 
@@ -369,12 +369,12 @@ impl AtRequest for MQTTSessionSettings<'_> {
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let mqtt_id = Self::get_session_id(data)?;
-        Ok(AtResponse::MQTTSessionCreated(mqtt_id as u8))
+        Ok(AtResponse::MQTTSessionCreated(mqtt_id))
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let mqtt_id = Self::get_session_id(data)?;
-        return Ok(MqttSessionId { mqtt_id });
+        Ok(MqttSessionId { mqtt_id })
     }
 }
 
@@ -403,7 +403,7 @@ pub struct GetMQTTSessionResponse {
 }
 
 impl GetMQTTSession {
-    fn get_data<'a>(data: &'a [u8]) -> Result<(i32, i32, &'a str), AtError> {
+    fn get_data(data: &[u8]) -> Result<(i32, i32, &str), AtError> {
         let tuple = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CMQNEW: ")
             .expect_int_parameter()
@@ -412,7 +412,7 @@ impl GetMQTTSession {
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
 
-        return Ok(tuple);
+        Ok(tuple)
     }
 }
 
@@ -442,11 +442,11 @@ impl AtRequest for GetMQTTSession {
         let (mqtt_id, used_state, server) = Self::get_data(data)?;
         let server: heapless::String<MAX_SERVER_LEN> = server.try_into()?;
         let used_state: UsedState = used_state.into();
-        return Ok(GetMQTTSessionResponse {
+        Ok(GetMQTTSessionResponse {
             mqtt_id: mqtt_id as u8,
-            used_state: used_state,
+            used_state,
             server,
-        });
+        })
     }
 }
 

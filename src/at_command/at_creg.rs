@@ -28,7 +28,7 @@ impl NetworkRegistration {
         let unsolicited = UnsolicitedResultCodes::from(n);
         let status = NetworkRegistrationStatus::from(stat);
 
-        return Ok((unsolicited, status));
+        Ok((unsolicited, status))
     }
 }
 
@@ -50,7 +50,7 @@ impl AtRequest for NetworkRegistration {
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let (unsolicited, status) = Self::parse_response(data)?;
         Ok(NetworkRegistrationResponse {
-            status: status,
+            status,
             unsolicited_result: unsolicited,
         })
     }

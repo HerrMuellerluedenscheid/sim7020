@@ -55,7 +55,7 @@ impl CreateSocket {
             .expect_identifier(b"\r\n\r\nOK\r\n")
             .finish()?;
 
-        return Ok(socket_id as u8);
+        Ok(socket_id as u8)
     }
 }
 

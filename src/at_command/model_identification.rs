@@ -30,7 +30,7 @@ impl ModelIdentification {
         for (i, b) in parsed.as_bytes().iter().enumerate() {
             id[i] = *b;
         }
-        return Ok(id);
+        Ok(id)
     }
 }
 

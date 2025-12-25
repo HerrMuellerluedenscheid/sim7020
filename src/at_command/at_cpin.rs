@@ -87,7 +87,7 @@ impl PINRequired {
 
         let pin_status: PinStatus = response_code.0.into();
 
-        return Ok(pin_status);
+        Ok(pin_status)
     }
 }
 
@@ -102,12 +102,12 @@ impl AtRequest for PINRequired {
 
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<super::AtResponse, AtError> {
-        let pin_status = Self::get_pin_response(&data)?;
+        let pin_status = Self::get_pin_response(data)?;
         Ok(AtResponse::PinStatus(pin_status))
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        Self::get_pin_response(&data)
+        Self::get_pin_response(data)
     }
 }
 

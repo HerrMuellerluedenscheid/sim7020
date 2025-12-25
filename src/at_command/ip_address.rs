@@ -46,6 +46,6 @@ impl AtRequest for LocalIPAddress {
         info!("localip: {}", local_ip);
         let ip: heapless::String<MAX_IP_SIZE> = local_ip.try_into()?;
 
-        return Ok(LocalIpAddressResponse { ip });
+        Ok(LocalIpAddressResponse { ip })
     }
 }

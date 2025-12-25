@@ -93,7 +93,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
     pub fn get_flow_control(&mut self) -> Result<GetFlowControlResponse, AtError> {
         let result = self.send_and_wait_response(&at_command::flow_control::GetFlowControl {})?;
-        return Ok(result);
+        Ok(result)
     }
 
     pub fn set_flow_control(&mut self) -> Result<(), AtError> {
@@ -131,7 +131,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
         let response_size = self.read_response(&mut read_buffer)?;
         let response = payload.parse_response_struct(&read_buffer[..response_size])?;
 
-        return Ok(response);
+        Ok(response)
     }
 
     #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]

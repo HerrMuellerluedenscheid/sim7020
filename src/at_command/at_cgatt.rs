@@ -33,7 +33,7 @@ impl GPRSServiceStatus {
             }
         };
 
-        return Ok(state);
+        Ok(state)
     }
 }
 
@@ -49,13 +49,13 @@ impl AtRequest for GPRSServiceStatus {
     #[allow(deprecated_in_future)]
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
-        let state = Self::parse_state(&data)?;
+        let state = Self::parse_state(data)?;
         Ok(AtResponse::PacketDomainAttachmentState(state))
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        let state = Self::parse_state(&data)?;
+        let state = Self::parse_state(data)?;
 
-        return Ok(PacketDomainAttachmentState { state });
+        Ok(PacketDomainAttachmentState { state })
     }
 }
