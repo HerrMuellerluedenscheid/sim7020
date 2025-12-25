@@ -135,7 +135,9 @@ impl AtRequest for EnterPIN {
 
 #[cfg(test)]
 mod test {
+    #![allow(deprecated)]
     use super::*;
+
     #[test]
     fn test_parse_pin_ready() -> Result<(), AtError> {
         let req = PINRequired;
