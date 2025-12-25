@@ -6,14 +6,15 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{
+    cmee::ReportMobileEquipmentErrorSetting, flow_control::GetFlowControlResponse,
+};
 use at_command::AtRequest;
-use at_command::AtResponse;
 use at_commands::parser::ParseError;
-use chrono::NaiveDateTime;
-use chrono::ParseResult;
 #[cfg(feature = "defmt")]
 use defmt::*;
 #[cfg(feature = "defmt")]
@@ -77,31 +78,29 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     pub fn disable_echo(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("Disable echo");
-        self.send_and_wait_reply(&at_command::ate::AtEcho {
+        self.send_and_wait_response(&at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })?;
         Ok(())
     }
 
     pub fn enable_numeric_errors(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::cmee::SetReportMobileEquipmentError {
+        self.send_and_wait_response(&at_command::cmee::SetReportMobileEquipmentError {
             setting: ReportMobileEquipmentErrorSetting::EnabledVerbose,
         })?;
         Ok(())
     }
 
-    pub fn get_flow_control(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::flow_control::GetFlowControl {})
-            .expect("TODO: panic message");
-        Ok(())
+    pub fn get_flow_control(&mut self) -> Result<GetFlowControlResponse, AtError> {
+        let result = self.send_and_wait_response(&at_command::flow_control::GetFlowControl {})?;
+        return Ok(result);
     }
 
     pub fn set_flow_control(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::flow_control::SetFlowControl {
+        self.send_and_wait_response(&at_command::flow_control::SetFlowControl {
             ta_to_te: ControlFlowStatus::Software,
             te_to_ta: ControlFlowStatus::Software,
-        })
-        .expect("TODO: panic message");
+        })?;
         Ok(())
     }
 
@@ -109,7 +108,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     pub fn ready(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("probing modem readiness");
-        self.send_and_wait_reply(&at_command::at::At {})?;
+        self.send_and_wait_response(&at_command::at::At {})?;
         Ok(())
     }
 
@@ -136,6 +135,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     }
 
     #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]
+    #[allow(deprecated)]
     pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
         &'b mut self,
         payload: &V,
