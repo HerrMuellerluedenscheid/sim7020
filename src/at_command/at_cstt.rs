@@ -8,12 +8,16 @@ const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
 pub struct GetAPNUserPassword {}
 
 impl AtRequest for GetAPNUserPassword {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_test(buffer, true)
             .named("+CSTT")
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -50,7 +54,7 @@ impl SetAPNUserPassword {
 }
 
 impl AtRequest for SetAPNUserPassword {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -59,5 +63,9 @@ impl AtRequest for SetAPNUserPassword {
             .with_optional_string_parameter(self.user)
             .with_optional_string_parameter(self.password)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }

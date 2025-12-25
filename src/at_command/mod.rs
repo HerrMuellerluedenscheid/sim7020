@@ -88,7 +88,13 @@ pub trait AtRequest {
         Ok(AtResponse::Ok)
     }
 
-    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
-        todo!("Not implemented yet for this type")
-    }
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError>;
+}
+
+pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
+    at_commands::parser::CommandParser::parse(data)
+        .expect_identifier(b"OK\r\n")
+        .finish()?;
+
+    Ok(())
 }
