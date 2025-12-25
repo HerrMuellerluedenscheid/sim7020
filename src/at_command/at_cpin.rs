@@ -118,13 +118,18 @@ pub struct EnterPIN {
 }
 
 impl AtRequest for EnterPIN {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CPIN")
             .with_int_parameter(self.pin)
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        // TODO: Check that the command is an OK
+        Ok(())
     }
 }
 
