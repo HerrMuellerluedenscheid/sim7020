@@ -8,7 +8,7 @@ pub struct StartQueryNTP<'a> {
 }
 
 impl AtRequest for StartQueryNTP<'_> {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         match &self.tzinfo {
@@ -23,17 +23,25 @@ impl AtRequest for StartQueryNTP<'_> {
                 .finish(),
         }
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
+    }
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct StopQueryNTP;
 
 impl AtRequest for StopQueryNTP {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CSNTPSTOP")
             .finish()
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
