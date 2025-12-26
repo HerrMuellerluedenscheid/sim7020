@@ -43,7 +43,6 @@ pub mod wireless;
 
 type BufferType = [u8; BUFFER_SIZE];
 
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
 pub enum AtResponse {
     Ok,
