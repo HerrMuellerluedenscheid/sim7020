@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse};
+use crate::at_command::AtRequest;
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
 use crate::{at_command, AtError, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
 use embedded_io_async::{Read, Write};
 
@@ -21,23 +23,49 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         Ok(modem)
     }
 
-    async fn disable_echo(&mut self) -> Result<AtResponse, AtError> {
-        self.send_and_wait_reply(at_command::ate::AtEcho {
+    async fn disable_echo(&mut self) -> Result<(), AtError> {
+        self.send_and_wait_response(at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })
-        .await
+        .await?;
+        Ok(())
     }
 
     pub async fn verbosity(
         &mut self,
         verbosity: ReportMobileEquipmentErrorSetting,
-    ) -> Result<AtResponse, AtError> {
-        self.send_and_wait_reply(at_command::cmee::SetReportMobileEquipmentError {
+    ) -> Result<(), AtError> {
+        self.send_and_wait_response(at_command::cmee::SetReportMobileEquipmentError {
             setting: verbosity,
         })
-        .await
+        .await?;
+        Ok(())
     }
 
+    pub async fn send_and_wait_response<V: AtRequest + 'a>(
+        &'a mut self,
+        payload: V,
+    ) -> Result<V::Response, crate::AtError> {
+        let mut buffer = [0; BUFFER_SIZE];
+        let data = payload.get_command_no_error(&mut buffer);
+        #[cfg(feature = "defmt")]
+        debug!("payload: {=[u8]:a}", &data);
+        self.writer
+            .write(data)
+            .await
+            .map_err(|_| AtError::IOError)?;
+        let response_size = self.read_response(&mut buffer).await?;
+
+        #[cfg(feature = "defmt")]
+        debug!("received response: {=[u8]:a}", buffer[..response_size]);
+        let response = payload.parse_response_struct(&buffer);
+        #[cfg(feature = "defmt")]
+        debug!("parsed response: {}", response);
+        response
+    }
+
+    #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]
+    #[allow(deprecated)]
     pub async fn send_and_wait_reply<V: AtRequest + 'a>(
         &'a mut self,
         payload: V,
@@ -73,13 +101,13 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         }
     }
 
-    pub async fn read_next_response(&mut self) -> Result<AtResponse, crate::AtError> {
+    pub async fn read_next_response(&mut self) -> Result<(), crate::AtError> {
         let mut buffer = [0; BUFFER_SIZE];
         #[cfg(feature = "defmt")]
         let response_size = self.read_response(&mut buffer).await?;
         #[cfg(feature = "defmt")]
         debug!("received response: {=[u8]:a}", buffer[..response_size]);
-        Ok(AtResponse::Ok)
+        Ok(())
     }
 
     async fn read_response(

@@ -22,11 +22,15 @@ pub enum Echo {
 pub struct AtEchoState {}
 
 impl AtRequest for AtEchoState {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let command = "ATE?\r\n";
         Ok(command.as_bytes())
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }
 
@@ -37,7 +41,7 @@ pub struct AtEcho {
 }
 
 impl AtRequest for AtEcho {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         let command = match self.status {
@@ -45,5 +49,9 @@ impl AtRequest for AtEcho {
             Echo::Enable => "ATE1\r\n",
         };
         Ok(command.as_bytes())
+    }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
     }
 }

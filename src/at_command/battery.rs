@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 
@@ -12,16 +14,8 @@ pub struct BatteryChargeStatus {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct BatteryCharge;
 
-impl AtRequest for BatteryCharge {
-    type Response = Result<(), AtError>;
-
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_execute(buffer, true)
-            .named("+CBC")
-            .finish()
-    }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+impl BatteryCharge {
+    fn get_battery_charge_status(data: &[u8]) -> Result<BatteryChargeStatus, AtError> {
         let (capacity_percent, voltage_millivolt) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CBC: ")
             .expect_int_parameter()
@@ -32,6 +26,27 @@ impl AtRequest for BatteryCharge {
             capacity_percent,
             voltage_millivolt,
         };
+
+        Ok(status)
+    }
+}
+
+impl AtRequest for BatteryCharge {
+    type Response = BatteryChargeStatus;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_execute(buffer, true)
+            .named("+CBC")
+            .finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let status = Self::get_battery_charge_status(data)?;
         Ok(AtResponse::BatteryCharge(status))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        Self::get_battery_charge_status(data)
     }
 }

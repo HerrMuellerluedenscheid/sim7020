@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 
@@ -11,16 +13,12 @@ pub enum GPRSServiceState {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct GPRSServiceStatus;
 
-impl AtRequest for GPRSServiceStatus {
-    type Response = Result<(), AtError>;
+pub struct PacketDomainAttachmentState {
+    pub state: GPRSServiceState,
+}
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_query(buffer, true)
-            .named("+CGATT")
-            .finish()
-    }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+impl GPRSServiceStatus {
+    fn parse_state(data: &[u8]) -> Result<GPRSServiceState, AtError> {
         let (state,) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+CGATT: ")
             .expect_int_parameter()
@@ -34,6 +32,30 @@ impl AtRequest for GPRSServiceStatus {
                 panic!("invalid GPRSServiceStatus")
             }
         };
+
+        Ok(state)
+    }
+}
+
+impl AtRequest for GPRSServiceStatus {
+    type Response = PacketDomainAttachmentState;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CGATT")
+            .finish()
+    }
+
+    #[allow(deprecated_in_future)]
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let state = Self::parse_state(data)?;
         Ok(AtResponse::PacketDomainAttachmentState(state))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let state = Self::parse_state(data)?;
+
+        Ok(PacketDomainAttachmentState { state })
     }
 }

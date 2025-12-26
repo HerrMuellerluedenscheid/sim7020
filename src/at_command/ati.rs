@@ -13,4 +13,8 @@ impl AtRequest for AtI {
             .named("I")
             .finish()
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, crate::AtError> {
+        Ok(ProductInformation {})
+    }
 }

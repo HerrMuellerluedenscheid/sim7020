@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -54,16 +56,15 @@ impl From<i32> for NetworkRegistrationStatus {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NetworkRegistration;
 
-impl AtRequest for NetworkRegistration {
-    type Response = Result<(), AtError>;
+pub struct NetworkRegistrationResponse {
+    pub unsolicited: UnsolicitedResultCodes,
+    pub status: NetworkRegistrationStatus,
+}
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_query(buffer, true)
-            .named("+CGREG")
-            .finish()
-    }
-
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+impl NetworkRegistration {
+    fn get_data(
+        data: &[u8],
+    ) -> Result<(UnsolicitedResultCodes, NetworkRegistrationStatus), AtError> {
         let (n, stat) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"\r\n+CGREG: ")
             .expect_int_parameter()
@@ -72,6 +73,31 @@ impl AtRequest for NetworkRegistration {
             .finish()?;
         let unsolicited = UnsolicitedResultCodes::from(n);
         let status = NetworkRegistrationStatus::from(stat);
+
+        Ok((unsolicited, status))
+    }
+}
+
+impl AtRequest for NetworkRegistration {
+    type Response = NetworkRegistrationResponse;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CGREG")
+            .finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let (unsolicited, status) = Self::get_data(data)?;
         Ok(AtResponse::NetworkRegistrationStatus(unsolicited, status))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let (unsolicited, status) = Self::get_data(data)?;
+        Ok(NetworkRegistrationResponse {
+            status,
+            unsolicited,
+        })
     }
 }

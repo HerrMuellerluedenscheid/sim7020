@@ -1,20 +1,8 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
-
-#[allow(dead_code)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct NetworkOperator([u8; 10]);
-
-impl From<&str> for NetworkOperator {
-    fn from(value: &str) -> Self {
-        let mut data = [0; 10];
-        let vab = value.as_bytes();
-        let len = vab.len().min(data.len());
-        data[..len].copy_from_slice(&vab[..len]);
-        Self(data)
-    }
-}
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum NetworkFormat {
@@ -58,16 +46,18 @@ impl From<i32> for NetworkMode {
 /// networks referenced in SIM, and other networks.
 pub struct NetworkInformation;
 
-impl AtRequest for NetworkInformation {
-    type Response = Result<(), AtError>;
+const OPERATOR_MAX_SIZE: usize = 16;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_query(buffer, true)
-            .named("+COPS")
-            .finish()
-    }
+pub type NetworkOperator = heapless::String<OPERATOR_MAX_SIZE>;
 
-    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+pub struct NetworkInformationState {
+    pub mode: NetworkMode,
+    pub format: NetworkFormat,
+    pub operator: Option<NetworkOperator>,
+}
+
+impl NetworkInformation {
+    fn get_network_info(data: &[u8]) -> Result<NetworkInformationState, AtError> {
         let (mode, format, operator, _access_technology) = CommandParser::parse(data)
             .expect_identifier(b"\r\n+COPS: ")
             .expect_int_parameter()
@@ -76,13 +66,45 @@ impl AtRequest for NetworkInformation {
             .expect_optional_int_parameter()
             .expect_identifier(b"\r\n\r\nOK")
             .finish()?;
+
         let mode = NetworkMode::from(mode);
 
         let format = match format {
             Some(form) => NetworkFormat::from(form),
             None => NetworkFormat::Unknown,
         };
-        let operator = operator.map(NetworkOperator::from);
-        Ok(AtResponse::NetworkInformationState(mode, format, operator))
+
+        let operator: Option<NetworkOperator> = operator.map(|x| x.try_into()).transpose()?;
+
+        Ok(NetworkInformationState {
+            format,
+            mode,
+            operator,
+        })
+    }
+}
+
+impl AtRequest for NetworkInformation {
+    type Response = NetworkInformationState;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+COPS")
+            .finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        let network = Self::get_network_info(data)?;
+        Ok(AtResponse::NetworkInformationState(
+            network.mode,
+            network.format,
+            network.operator,
+        ))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let network = Self::get_network_info(data)?;
+        Ok(network)
     }
 }

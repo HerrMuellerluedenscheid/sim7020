@@ -1,4 +1,6 @@
-use crate::at_command::{AtRequest, AtResponse, BufferType};
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -75,17 +77,9 @@ impl From<&str> for PinStatus {
     }
 }
 
-impl AtRequest for PINRequired {
-    type Response = Result<(), AtError>;
-
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_query(buffer, true)
-            .named("+CPIN")
-            .finish()
-    }
-
-    fn parse_response(&self, _data: &[u8]) -> Result<super::AtResponse, AtError> {
-        let response_code = at_commands::parser::CommandParser::parse(_data)
+impl PINRequired {
+    fn get_pin_response(data: &[u8]) -> Result<PinStatus, AtError> {
+        let response_code = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"+CPIN: ")
             .expect_raw_string()
             .expect_identifier(b"\r\n\r\nOK")
@@ -93,7 +87,27 @@ impl AtRequest for PINRequired {
 
         let pin_status: PinStatus = response_code.0.into();
 
+        Ok(pin_status)
+    }
+}
+
+impl AtRequest for PINRequired {
+    type Response = PinStatus;
+
+    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+        at_commands::builder::CommandBuilder::create_query(buffer, true)
+            .named("+CPIN")
+            .finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<super::AtResponse, AtError> {
+        let pin_status = Self::get_pin_response(data)?;
         Ok(AtResponse::PinStatus(pin_status))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        Self::get_pin_response(data)
     }
 }
 
@@ -104,7 +118,7 @@ pub struct EnterPIN {
 }
 
 impl AtRequest for EnterPIN {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -112,11 +126,18 @@ impl AtRequest for EnterPIN {
             .with_int_parameter(self.pin)
             .finish()
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        // TODO: Check that the command is an OK
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod test {
+    #![allow(deprecated)]
     use super::*;
+
     #[test]
     fn test_parse_pin_ready() -> Result<(), AtError> {
         let req = PINRequired;

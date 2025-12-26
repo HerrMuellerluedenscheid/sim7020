@@ -6,11 +6,14 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
+use crate::at_command::{
+    cmee::ReportMobileEquipmentErrorSetting, flow_control::GetFlowControlResponse,
+};
 use at_command::AtRequest;
-use at_command::AtResponse;
 use at_commands::parser::ParseError;
 #[cfg(feature = "defmt")]
 use defmt::*;
@@ -41,11 +44,25 @@ pub enum AtError {
     IOError,
     AtParseError,
     ConnectSocketError,
+    CapacityError,
+    ParseClockError,
 }
 
 impl From<ParseError> for AtError {
     fn from(_: ParseError) -> AtError {
         AtError::AtParseError
+    }
+}
+
+impl From<heapless::CapacityError> for AtError {
+    fn from(_: heapless::CapacityError) -> Self {
+        AtError::CapacityError
+    }
+}
+
+impl From<chrono::format::ParseError> for AtError {
+    fn from(_: chrono::format::ParseError) -> Self {
+        AtError::ParseClockError
     }
 }
 
@@ -61,31 +78,29 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     pub fn disable_echo(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("Disable echo");
-        self.send_and_wait_reply(&at_command::ate::AtEcho {
+        self.send_and_wait_response(&at_command::ate::AtEcho {
             status: at_command::ate::Echo::Disable,
         })?;
         Ok(())
     }
 
     pub fn enable_numeric_errors(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::cmee::SetReportMobileEquipmentError {
+        self.send_and_wait_response(&at_command::cmee::SetReportMobileEquipmentError {
             setting: ReportMobileEquipmentErrorSetting::EnabledVerbose,
         })?;
         Ok(())
     }
 
-    pub fn get_flow_control(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::flow_control::GetFlowControl {})
-            .expect("TODO: panic message");
-        Ok(())
+    pub fn get_flow_control(&mut self) -> Result<GetFlowControlResponse, AtError> {
+        let result = self.send_and_wait_response(&at_command::flow_control::GetFlowControl {})?;
+        Ok(result)
     }
 
     pub fn set_flow_control(&mut self) -> Result<(), AtError> {
-        self.send_and_wait_reply(&at_command::flow_control::SetFlowControl {
+        self.send_and_wait_response(&at_command::flow_control::SetFlowControl {
             ta_to_te: ControlFlowStatus::Software,
             te_to_ta: ControlFlowStatus::Software,
-        })
-        .expect("TODO: panic message");
+        })?;
         Ok(())
     }
 
@@ -93,10 +108,34 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
     pub fn ready(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("probing modem readiness");
-        self.send_and_wait_reply(&at_command::at::At {})?;
+        self.send_and_wait_response(&at_command::at::At {})?;
         Ok(())
     }
 
+    pub fn send_and_wait_response<'b, V: AtRequest + 'b>(
+        &'b mut self,
+        payload: &V,
+    ) -> Result<V::Response, AtError> {
+        #[cfg(feature = "defmt")]
+        info!("Sending command to the modem");
+
+        let mut buffer = [0; BUFFER_SIZE];
+        let data = payload.get_command_no_error(&mut buffer);
+
+        #[cfg(feature = "defmt")]
+        debug!("sending command: {=[u8]:a}", data);
+
+        self.writer.write(data).map_err(|_e| AtError::IOError)?;
+
+        let mut read_buffer = [0; BUFFER_SIZE];
+        let response_size = self.read_response(&mut read_buffer)?;
+        let response = payload.parse_response_struct(&read_buffer[..response_size])?;
+
+        Ok(response)
+    }
+
+    #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]
+    #[allow(deprecated)]
     pub fn send_and_wait_reply<'b, V: AtRequest + 'b>(
         &'b mut self,
         payload: &V,

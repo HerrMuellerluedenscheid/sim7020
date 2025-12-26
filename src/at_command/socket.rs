@@ -1,5 +1,7 @@
+#[allow(deprecated)]
+use crate::at_command::AtResponse;
 use crate::{
-    at_command::{AtRequest, AtResponse},
+    at_command::{verify_ok, AtRequest},
     AtError,
 };
 
@@ -41,8 +43,24 @@ pub struct CreateSocket {
     pub cid: Option<i32>,
 }
 
+pub struct SocketCreated {
+    pub socket_id: u8,
+}
+
+impl CreateSocket {
+    fn get_socket_id(data: &[u8]) -> Result<u8, AtError> {
+        let (socket_id,) = at_commands::parser::CommandParser::parse(data)
+            .expect_identifier(b"+CSOC: ")
+            .expect_int_parameter()
+            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .finish()?;
+
+        Ok(socket_id as u8)
+    }
+}
+
 impl AtRequest for CreateSocket {
-    type Response = Result<(), AtError>;
+    type Response = SocketCreated;
 
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         let mut builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -58,14 +76,17 @@ impl AtRequest for CreateSocket {
         builder.finish()
     }
 
-    fn parse_response(&self, _data: &[u8]) -> Result<super::AtResponse, AtError> {
-        let socket_id = at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"+CSOC: ")
-            .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
-            .finish()?;
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<super::AtResponse, AtError> {
+        let socket_id = Self::get_socket_id(data)?;
 
-        Ok(AtResponse::SocketCreated(socket_id.0 as u8))
+        Ok(AtResponse::SocketCreated(socket_id))
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        let socket_id = Self::get_socket_id(data)?;
+
+        Ok(SocketCreated { socket_id })
     }
 }
 
@@ -82,7 +103,7 @@ pub struct ConnectSocketToRemote<'a> {
 }
 
 impl AtRequest for ConnectSocketToRemote<'_> {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         assert!(self.port > 0);
@@ -96,12 +117,15 @@ impl AtRequest for ConnectSocketToRemote<'_> {
         builder.finish()
     }
 
-    fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
-        at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"OK\r\n")
-            .finish()?;
-
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        verify_ok(data)?;
         Ok(AtResponse::Ok)
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        verify_ok(data)?;
+        Ok(())
     }
 }
 
@@ -116,7 +140,7 @@ pub struct SendSocketMessage<'a> {
 }
 
 impl AtRequest for SendSocketMessage<'_> {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -128,12 +152,17 @@ impl AtRequest for SendSocketMessage<'_> {
         builder.finish()
     }
 
-    fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
-        at_commands::parser::CommandParser::parse(_data)
-            .expect_identifier(b"OK\r\n")
-            .finish()?;
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        verify_ok(data)?;
 
         Ok(AtResponse::Ok)
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        verify_ok(data)?;
+
+        Ok(())
     }
 }
 
@@ -144,7 +173,7 @@ pub struct CloseSocket {
 }
 
 impl AtRequest for CloseSocket {
-    type Response = Result<(), AtError>;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -153,10 +182,15 @@ impl AtRequest for CloseSocket {
 
         builder.finish()
     }
+
+    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod test {
+    #![allow(deprecated)]
     use crate::at_command::{
         socket::{CloseSocket, ConnectSocketToRemote, CreateSocket, Domain, Protocol, Type},
         AtRequest, AtResponse,
