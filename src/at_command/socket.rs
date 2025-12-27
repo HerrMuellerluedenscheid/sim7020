@@ -50,9 +50,9 @@ pub struct SocketCreated {
 impl CreateSocket {
     fn get_socket_id(data: &[u8]) -> Result<u8, AtError> {
         let (socket_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"+CSOC: ")
+            .expect_identifier(b"\r\n+CSOC: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .expect_identifier(b"\r\n\r\nOK\r")
             .finish()?;
 
         Ok(socket_id as u8)
@@ -238,7 +238,7 @@ mod test {
         };
 
         // Response example: +CSOC 5\r\n\r\nOK\r\n
-        let response = b"+CSOC: 5\r\n\r\nOK\r\n";
+        let response = b"\r\n+CSOC: 5\r\n\r\nOK\r";
 
         let parsed = create_socket.parse_response(response).unwrap();
 
