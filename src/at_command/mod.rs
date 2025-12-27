@@ -50,7 +50,6 @@ mod deprecated {
     use super::*;
     #[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
     #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-
     pub enum AtResponse {
         Ok,
         ModelIdentifier([u8; 8]),
