@@ -7,6 +7,10 @@ version = "2.2.0"
 license = "MIT"
 repository = "https://github.com/HerrMuellerluedenscheid/sim7020"
 description = "driver for sim7020E NB IoT modem"
+authors = [
+    "Marius Kriegerowski <marius.kriegerowski@gmail.com>",
+    "Javier <javi.mateosegura@gmail.com>"
+]
 
 [dependencies]
 defmt = { version = "1.0.1", optional = true }
