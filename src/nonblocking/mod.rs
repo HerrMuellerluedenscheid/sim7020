@@ -51,7 +51,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         #[cfg(feature = "defmt")]
         debug!("payload: {=[u8]:a}", &data);
         self.writer
-            .write(data)
+            .write_all(data)
             .await
             .map_err(|_| AtError::IOError)?;
         let response_size = self.read_response(&mut buffer).await?;
@@ -74,7 +74,7 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         let data = payload.get_command_no_error(&mut buffer);
         #[cfg(feature = "defmt")]
         debug!("payload: {=[u8]:a}", &data);
-        self.writer.write(data).await.unwrap();
+        self.writer.write_all(data).await.unwrap();
         match self.read_response(&mut buffer).await {
             Ok(response_size) => {
                 #[cfg(feature = "defmt")]

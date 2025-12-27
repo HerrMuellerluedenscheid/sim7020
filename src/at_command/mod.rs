@@ -20,6 +20,7 @@ pub mod at_cpin;
 pub mod at_creg;
 pub mod at_csq;
 pub mod at_cstt;
+pub mod at_psd;
 pub mod ate;
 pub mod ati;
 pub mod battery;
