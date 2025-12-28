@@ -1,10 +1,13 @@
+use crate::at_command::socket::{
+    CloseSocket, ConnectSocketToRemote, CreateSocket, Domain, Protocol, SendSocketMessage,
+    SendSocketString, Type,
+};
+use crate::contexts::common_socket_context::{Connected, PendingConnection};
+use crate::nonblocking::AsyncModem;
+use crate::AtError;
 use core::marker::PhantomData;
 use defmt::debug;
 use embedded_io_async::{Read, Write};
-use crate::at_command::socket::{CloseSocket, ConnectSocketToRemote, CreateSocket, Domain, Protocol, SendSocketMessage, SendSocketString, Type};
-use crate::AtError;
-use crate::contexts::common_socket_context::{Connected, PendingConnection};
-use crate::nonblocking::AsyncModem;
 
 pub struct AsyncSocketContext<'a, W: Write, R: Read, S> {
     socket_id: u8,
@@ -39,11 +42,14 @@ pub async fn new_async_http_session<'a, W: Write, R: Read>(
 }
 
 async fn close_socket_context<'a, W: Write, R: Read, S>(
-    context:  AsyncSocketContext<'a, W, R, S>,
+    context: AsyncSocketContext<'a, W, R, S>,
 ) -> Result<(), AtError> {
-    context.modem.send_and_wait_response(CloseSocket {
-        socket_id: context.socket_id,
-    }).await?;
+    context
+        .modem
+        .send_and_wait_response(CloseSocket {
+            socket_id: context.socket_id,
+        })
+        .await?;
 
     Ok(())
 }
@@ -58,11 +64,13 @@ impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, PendingConnection> {
         #[cfg(feature = "defmt")]
         debug!("Connecting socket to {}:{}", address, port);
 
-        self.modem.send_and_wait_response(ConnectSocketToRemote {
-            port,
-            socket_id: self.socket_id,
-            remote_address: address,
-        }).await?;
+        self.modem
+            .send_and_wait_response(ConnectSocketToRemote {
+                port,
+                socket_id: self.socket_id,
+                remote_address: address,
+            })
+            .await?;
 
         #[cfg(feature = "defmt")]
         debug!("Socket connected to remote peer OK");
@@ -82,20 +90,24 @@ impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, PendingConnection> {
 impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, Connected> {
     /// Sends the given string to the remote connection
     pub async fn send_string(&mut self, data: &str) -> Result<(), AtError> {
-        self.modem.send_and_wait_response(SendSocketString {
-            data,
-            socket_id: self.socket_id,
-        }).await?;
+        self.modem
+            .send_and_wait_response(SendSocketString {
+                data,
+                socket_id: self.socket_id,
+            })
+            .await?;
 
         Ok(())
     }
 
     /// Send the given data to the remote connection
     pub async fn send_data(&mut self, data: &[u8]) -> Result<(), AtError> {
-        self.modem.send_and_wait_response(SendSocketMessage {
-            data,
-            socket_id: self.socket_id,
-        }).await?;
+        self.modem
+            .send_and_wait_response(SendSocketMessage {
+                data,
+                socket_id: self.socket_id,
+            })
+            .await?;
 
         Ok(())
     }
@@ -104,4 +116,3 @@ impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, Connected> {
         close_socket_context(self).await
     }
 }
-
