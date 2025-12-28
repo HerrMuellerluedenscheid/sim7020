@@ -130,9 +130,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
-    /// Length of the data we want to send
-    pub data_len: u16,
-    /// Data to be send
+    /// Data to be send. Must be in hex format
     pub data: &'a [u8],
 }
 
@@ -143,8 +141,43 @@ impl AtRequest for SendSocketMessage<'_> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
-            .with_int_parameter(self.data_len)
+            .with_int_parameter(self.data.len() as u16)
             .with_raw_parameter(self.data);
+
+        builder.finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        verify_ok(data)?;
+
+        Ok(AtResponse::Ok)
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        verify_ok(data)?;
+
+        Ok(())
+    }
+}
+
+/// Struct used to send data through the socket
+pub struct SendSocketString<'a> {
+    /// Socket ID obtained by using [CreateSocket]
+    pub socket_id: u8,
+    /// Data to be send. Must be in hex format
+    pub data: &'a str,
+}
+
+impl AtRequest for SendSocketString<'_> {
+    type Response = ();
+
+    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+        let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CSOSEND")
+            .with_int_parameter(self.socket_id)
+            .with_int_parameter(0)
+            .with_string_parameter(self.data);
 
         builder.finish()
     }
