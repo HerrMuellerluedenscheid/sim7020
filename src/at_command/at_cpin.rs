@@ -153,7 +153,7 @@ mod test {
             _ => panic!("Unexpected response type"),
         }
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -171,7 +171,7 @@ mod test {
             _ => panic!("Unexpected response type"),
         }
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -189,7 +189,7 @@ mod test {
             _ => panic!("Unexpected response type"),
         }
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]
@@ -207,7 +207,7 @@ mod test {
             _ => panic!("Unexpected response type"),
         }
 
-        return Ok(());
+        Ok(())
     }
 
     #[test]

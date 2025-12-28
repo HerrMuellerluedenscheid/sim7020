@@ -52,7 +52,7 @@ impl CreateSocket {
         let (socket_id,) = at_commands::parser::CommandParser::parse(data)
             .expect_identifier(b"+CSOC: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .expect_identifier(b"\r\n\r\nOK\r")
             .finish()?;
 
         Ok(socket_id as u8)

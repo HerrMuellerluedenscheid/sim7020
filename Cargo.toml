@@ -77,3 +77,4 @@ opt-level = 3
 
 [dev-dependencies]
 defmt-test = "0.3.2"
+mockall = "0.14.0"

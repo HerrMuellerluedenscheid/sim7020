@@ -92,7 +92,9 @@ pub trait AtRequest {
 
 pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
     at_commands::parser::CommandParser::parse(data)
-        .expect_identifier(b"OK\r\n")
+        .expect_optional_identifier(b"\r")
+        .expect_optional_identifier(b"\n")
+        .expect_identifier(b"OK\r")
         .finish()?;
 
     Ok(())

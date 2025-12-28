@@ -6,6 +6,8 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
+pub mod contexts;
+
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
 #[allow(deprecated)]
