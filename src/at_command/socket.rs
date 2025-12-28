@@ -98,8 +98,6 @@ pub struct ConnectSocketToRemote<'a> {
     pub port: u16,
     /// Address of the server which we want to connect to
     pub remote_address: &'a str,
-    /// Communication type that will be used
-    pub connection_type: Type,
 }
 
 impl AtRequest for ConnectSocketToRemote<'_> {
@@ -111,8 +109,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
             .named("+CSOCON")
             .with_int_parameter(self.socket_id)
             .with_int_parameter(self.port as i32)
-            .with_string_parameter(self.remote_address)
-            .with_int_parameter(self.connection_type as u8);
+            .with_string_parameter(self.remote_address);
 
         builder.finish()
     }
@@ -253,7 +250,6 @@ mod test {
         let mut buffer = [0; 512];
 
         let at_connect_request = ConnectSocketToRemote {
-            connection_type: super::Type::TCP,
             port: 1111,
             socket_id: 1,
             remote_address: "127.0.0.1",
@@ -263,7 +259,7 @@ mod test {
 
         assert_eq!(
             core::str::from_utf8(result).unwrap(),
-            "AT+CSOCON=1,1111,\"127.0.0.1\",1\r\n"
+            "AT+CSOCON=1,1111,\"127.0.0.1\"\r\n"
         );
     }
 
@@ -273,7 +269,6 @@ mod test {
         let mut buffer = [0; 512];
 
         let at_connect_request = ConnectSocketToRemote {
-            connection_type: super::Type::TCP,
             port: 0,
             socket_id: 1,
             remote_address: "127.0.0.1",
