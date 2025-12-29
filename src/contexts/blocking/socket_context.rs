@@ -43,8 +43,8 @@ pub fn new_socket_context<'a, W: Write, R: Read>(
     })
 }
 
-fn close_socket_context<'a, W: Write, R: Read, S>(
-    context: SocketContext<'a, W, R, S>,
+fn close_socket_context<W: Write, R: Read, S>(
+    context: SocketContext<W, R, S>,
 ) -> Result<(), AtError> {
     context.modem.send_and_wait_response(&CloseSocket {
         socket_id: context.socket_id,
@@ -112,7 +112,6 @@ impl<'a, W: Write, R: Read> SocketContext<'a, W, R, Connected> {
 
 #[cfg(test)]
 mod test {
-
     use std::{cell::RefCell, sync::Mutex};
 
     use crate::{AtError, Modem};

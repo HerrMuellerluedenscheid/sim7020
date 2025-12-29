@@ -130,7 +130,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
-    /// Data to be send. Must be in hex format
+    /// Data to be sent.
     pub data: &'a [u8],
 }
 
@@ -142,7 +142,7 @@ impl AtRequest for SendSocketMessage<'_> {
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
             .with_int_parameter(self.data.len() as u16)
-            .with_raw_parameter(self.data);
+            .with_rax_hex_parameter(self.data);
 
         builder.finish()
     }
