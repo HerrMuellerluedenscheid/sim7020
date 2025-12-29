@@ -9,14 +9,15 @@ use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 use defmt::*;
 #[cfg(feature = "defmt")]
 use embedded_io::Error;
+use embedded_io::ReadReady;
 use log::error;
 
-pub struct AsyncModem<T: Write, U: Read> {
+pub struct AsyncModem<T: Write, U: Read + ReadReady> {
     pub writer: T,
     pub reader: U,
 }
 
-impl<'a, T: Write, U: Read> AsyncModem<T, U> {
+impl<'a, T: Write, U: Read + ReadReady> AsyncModem<T, U> {
     pub async fn new(writer: T, reader: U) -> Result<Self, AtError> {
         let mut modem = Self { writer, reader };
         modem.disable_echo().await?;
@@ -47,6 +48,26 @@ impl<'a, T: Write, U: Read> AsyncModem<T, U> {
         payload: V,
     ) -> Result<V::Response, crate::AtError> {
         let mut buffer = [0; BUFFER_SIZE];
+
+        // Before we try to read we will ensure that the read buffer is empty
+        #[cfg(feature = "defmt")]
+        debug!("Checking if are pending bytes to read before performing the read operation");
+        if self.reader.read_ready().map_err(|_e| AtError::IOError)? {
+            #[cfg(feature = "defmt")]
+            info!("There are some bytes pending to be read from the read, reading them before continuing");
+            let _flush_read_size = self
+                .reader
+                .read(&mut buffer).await
+                .map_err(|_e| AtError::IOError)?;
+
+            #[cfg(feature = "defmt")]
+            debug!(
+                "The flush read has read {} bytes. The content was: {}",
+                _flush_read_size,
+                buffer[.._flush_read_size]
+            );
+        }
+
         let data = payload.get_command_no_error(&mut buffer);
         #[cfg(feature = "defmt")]
         debug!("payload: {=[u8]:a}", &data);

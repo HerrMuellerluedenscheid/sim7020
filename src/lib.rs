@@ -19,6 +19,7 @@ use at_commands::parser::ParseError;
 use defmt::*;
 #[cfg(feature = "defmt")]
 use embedded_io::Error;
+use embedded_io::ReadReady;
 pub use embedded_io::{Read, Write};
 
 const BUFFER_SIZE: usize = 512;
@@ -66,7 +67,7 @@ impl From<chrono::format::ParseError> for AtError {
     }
 }
 
-impl<'a, T: Write, U: Read> Modem<'a, T, U> {
+impl<'a, T: Write, U: Read + ReadReady> Modem<'a, T, U> {
     pub fn new(writer: &'a mut T, reader: &'a mut U) -> Result<Self, AtError> {
         let mut modem = Self { writer, reader };
         modem.disable_echo()?;
@@ -120,11 +121,29 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
         info!("Sending command to the modem");
 
         let mut buffer = [0; BUFFER_SIZE];
+
+        // Before we try to read we will ensure that the read buffer is empty
+        #[cfg(feature = "defmt")]
+        debug!("Checking if are pending bytes to read before performing the read operation");
+        if self.reader.read_ready().map_err(|_e| AtError::IOError)? {
+            #[cfg(feature = "defmt")]
+            info!("There are some bytes pending to be read from the read, reading them before continuing");
+            let _flush_read_size = self
+                .reader
+                .read(&mut buffer)
+                .map_err(|_e| AtError::IOError)?;
+
+            #[cfg(feature = "defmt")]
+            debug!(
+                "The flush read has read {} bytes. The content was: {}",
+                _flush_read_size,
+                buffer[.._flush_read_size]
+            );
+        }
         let data = payload.get_command_no_error(&mut buffer);
 
         #[cfg(feature = "defmt")]
         debug!("sending command: {=[u8]:a}", data);
-
         self.writer.write_all(data).map_err(|_e| AtError::IOError)?;
 
         let mut read_buffer = [0; BUFFER_SIZE];
