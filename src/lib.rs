@@ -127,7 +127,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
         #[cfg(feature = "defmt")]
         debug!("sending command: {=[u8]:a}", data);
 
-        self.writer.write(data).map_err(|_e| AtError::IOError)?;
+        self.writer.write_all(data).map_err(|_e| AtError::IOError)?;
 
         let mut read_buffer = [0; BUFFER_SIZE];
         let response_size = self.read_response(&mut read_buffer)?;
@@ -147,7 +147,7 @@ impl<'a, T: Write, U: Read> Modem<'a, T, U> {
 
         #[cfg(feature = "defmt")]
         debug!("sending command: {=[u8]:a}", data);
-        self.writer.write(data).map_err(|_e| AtError::IOError)?;
+        self.writer.write_all(data).map_err(|_e| AtError::IOError)?;
 
         let mut read_buffer = [0; BUFFER_SIZE];
         let response_size = self.read_response(&mut read_buffer)?;
