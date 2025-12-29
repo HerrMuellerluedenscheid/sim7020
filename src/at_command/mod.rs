@@ -43,32 +43,44 @@ pub mod wireless;
 
 type BufferType = [u8; BUFFER_SIZE];
 
-#[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
-pub enum AtResponse {
-    Ok,
-    ModelIdentifier([u8; 8]),
-    NTPTimestamp(i64),
-    PDPContextDynamicParameters(u8, u8, *const u8, *const u8),
-    MQTTSessionCreated(u8), // client_id
-    MQTTSession(u8, UsedState, [u8; 50]),
-    HTTPSessionCreated(u8),                               // client_id
-    HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
-    PacketDomainAttachmentState(GPRSServiceState),
-    NetworkInformationState(NetworkMode, NetworkFormat, Option<NetworkOperator>),
-    SignalQuality(i32, i32),
-    ReportMobileEquipmentErrorSetting(i32),
-    NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
-    NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
-    PDPContext(Option<(PDPState, i32)>),
-    SleepIndication(SleepIndication),
-    PowerSavingMode(PowerSavingModeState),
-    BatteryCharge(BatteryChargeStatus),
-    ControlFlow(ControlFlowStatus, ControlFlowStatus),
-    LocalIPAddress(i32),
-    SocketCreated(u8),
-    SocketConnected,
-    PinStatus(PinStatus),
+// We have to do this workaround because the derive causes deprecation warnings.
+// The workaround allows deprecations in the deprecated module and then we
+mod deprecated {
+    #![allow(deprecated)]
+    use super::*;
+    #[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+    pub enum AtResponse {
+        Ok,
+        ModelIdentifier([u8; 8]),
+        NTPTimestamp(i64),
+        PDPContextDynamicParameters(u8, u8, *const u8, *const u8),
+        MQTTSessionCreated(u8), // client_id
+        MQTTSession(u8, UsedState, [u8; 50]),
+        HTTPSessionCreated(u8),                               // client_id
+        HttpSessions(u8, bool, u8, bool, u8, bool, u8, bool), // id0, state0, id1, state1 ...
+        PacketDomainAttachmentState(GPRSServiceState),
+        NetworkInformationState(NetworkMode, NetworkFormat, Option<NetworkOperator>),
+        SignalQuality(i32, i32),
+        ReportMobileEquipmentErrorSetting(i32),
+        NetworkRegistration(UnsolicitedResultCodes, NetworkRegistrationStatus),
+        NetworkRegistrationStatus(UnsolicitedResultCodes, NetworkRegistrationStatus),
+        PDPContext(Option<(PDPState, i32)>),
+        SleepIndication(SleepIndication),
+        PowerSavingMode(PowerSavingModeState),
+        BatteryCharge(BatteryChargeStatus),
+        ControlFlow(ControlFlowStatus, ControlFlowStatus),
+        LocalIPAddress(i32),
+        SocketCreated(u8),
+        SocketConnected,
+        PinStatus(PinStatus),
+    }
 }
+
+// We re-export with deprectation the AtResponse so we do not break any current implementation
+#[allow(deprecated)]
+#[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
+pub type AtResponse = deprecated::AtResponse;
 
 pub trait AtRequest {
     type Response;
@@ -92,7 +104,7 @@ pub trait AtRequest {
 
 pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
     at_commands::parser::CommandParser::parse(data)
-        .expect_identifier(b"OK\r\n")
+        .expect_identifier(b"\r\nOK\r")
         .finish()?;
 
     Ok(())
