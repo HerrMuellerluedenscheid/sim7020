@@ -57,3 +57,20 @@ jobs:
           components: rustfmt
           target: thumbv6m-none-eabi
       - run: cargo fmt -- --check
+  examples:
+    name: examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+          target: thumbv6m-none-eabi
+      - name: build pico example
+        env:
+          EXAMPLE_MQTT_USER: "foo"
+          EXAMPLE_MQTT_PASSWORD: "foo"
+        working-directory: examples/pico
+        run: cargo build
