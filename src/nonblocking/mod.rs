@@ -57,7 +57,8 @@ impl<'a, T: Write, U: Read + ReadReady> AsyncModem<T, U> {
             info!("There are some bytes pending to be read from the read, reading them before continuing");
             let _flush_read_size = self
                 .reader
-                .read(&mut buffer).await
+                .read(&mut buffer)
+                .await
                 .map_err(|_e| AtError::IOError)?;
 
             #[cfg(feature = "defmt")]
