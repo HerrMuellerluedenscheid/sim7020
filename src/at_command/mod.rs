@@ -41,6 +41,7 @@ pub mod power_saving_mode;
 pub mod sleep_indication;
 pub mod socket;
 pub mod wireless;
+pub mod csclk;
 
 type BufferType = [u8; BUFFER_SIZE];
 
