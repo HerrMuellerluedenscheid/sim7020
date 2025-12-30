@@ -3,14 +3,15 @@
 //!
 //! To use this module the feature nonblocking must be enabled
 
-use core::cell::RefCell;
 use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::{at_command, AtError, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
+use core::cell::RefCell;
 use embedded_io_async::{Read, Write};
 
 use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
+use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
 #[cfg(feature = "defmt")]
 use defmt::*;
@@ -19,7 +20,6 @@ use embedded_hal_async::delay::DelayNs;
 #[cfg(feature = "defmt")]
 use embedded_io::Error;
 use log::error;
-use crate::at_command::csclk::CSCLKMode::{HardwareControlled};
 
 /// Time that we will await to ensure the system has turned ON
 const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
@@ -37,19 +37,35 @@ pub struct AsyncModem<T: Write, U: Read, P: OutputPin, D: DelayNs> {
     /// A delay implementation that will help controlling some await times
     pub delay: D,
     /// Current sleep mode that has been configured for the module
-    sleep_mode: RefCell<CSCLKMode>
+    sleep_mode: RefCell<CSCLKMode>,
 }
 
 impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
-    pub async fn new(writer: T, reader: U, power_pin: P, dtr_pin: P, delay: D) -> Result<Self, AtError> {
-        let mut modem = Self { writer, reader, power_pin, dtr_pin, delay, sleep_mode: RefCell::new(Default::default()) };
+    pub async fn new(
+        writer: T,
+        reader: U,
+        power_pin: P,
+        dtr_pin: P,
+        delay: D,
+    ) -> Result<Self, AtError> {
+        let mut modem = Self {
+            writer,
+            reader,
+            power_pin,
+            dtr_pin,
+            delay,
+            sleep_mode: RefCell::new(Default::default()),
+        };
         #[cfg(feature = "defmt")]
         debug!("Ensuring the power pin is ON");
         modem.power_pin.set_high().map_err(|_| AtError::HALError)?;
         // We will set the DTR pin off so we are sure that the module does not go to sleep
         modem.turn_off_dtr()?;
         #[cfg(feature = "defmt")]
-        debug!("Sleeping for {}ms to ensure SIM7020 has been turned on", AWAIT_TIME_FOR_POWER_UP);
+        debug!(
+            "Sleeping for {}ms to ensure SIM7020 has been turned on",
+            AWAIT_TIME_FOR_POWER_UP
+        );
         modem.delay.delay_ms(AWAIT_TIME_FOR_POWER_UP).await;
         modem.disable_echo().await?;
         Ok(modem)
@@ -70,7 +86,10 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
         self.power_pin.set_high().map_err(|_| AtError::HALError)?;
 
         #[cfg(feature = "defmt")]
-        debug!("Sleeping for {}ms to ensure SIM7020 has been turned on", AWAIT_TIME_FOR_POWER_UP);
+        debug!(
+            "Sleeping for {}ms to ensure SIM7020 has been turned on",
+            AWAIT_TIME_FOR_POWER_UP
+        );
         self.delay.delay_ms(AWAIT_TIME_FOR_POWER_UP).await;
         Ok(())
     }
@@ -95,9 +114,7 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
         // First we will ensure that the DTR pin is off, so the module does not do goes to sleep
         self.turn_off_dtr()?;
         // First we will send the AT command to ensure the sleep mode is set
-        self.send_and_wait_response(SetCSCLKMode {
-            mode
-        }).await?;
+        self.send_and_wait_response(SetCSCLKMode { mode }).await?;
 
         #[cfg(feature = "defmt")]
         debug!("Sleep mode enabled");
@@ -130,7 +147,7 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
     pub async fn wake_up(&mut self) -> Result<(), AtError> {
         #[cfg(feature = "defmt")]
         info!("Stopping sleeping");
-        let sleep_mode = self.sleep_mode.borrow().clone();
+        let sleep_mode = *self.sleep_mode.borrow();
         match sleep_mode {
             CSCLKMode::Disabled => {
                 #[cfg(feature = "defmt")]
@@ -144,10 +161,12 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
                 // when is configured in software mode
                 const AT_COMMAND_TWICE: &[u8] = b"AT\r\nAT\r\n";
 
-                self.writer.write_all(&AT_COMMAND_TWICE).await.map_err(|_| AtError::IOError)?;
+                self.writer
+                    .write_all(AT_COMMAND_TWICE)
+                    .await
+                    .map_err(|_| AtError::IOError)?;
 
                 Ok(())
-
             }
 
             CSCLKMode::HardwareControlled => {
@@ -157,7 +176,6 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
                 // Just pull off the DTR pin
                 self.turn_off_dtr()
             }
-
         }
     }
 

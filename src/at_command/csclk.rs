@@ -5,25 +5,22 @@ use crate::AtError;
 
 /// The modes CSLK can be controlled
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Default)]
 #[repr(u8)]
 pub enum CSCLKMode {
     /// The module does not go to sleep
+    #[default]
     Disabled = 0,
     /// The module sleep is controlled with the DTR pin
     HardwareControlled = 1,
     /// The module sleep is controlled by the own module in idle periods
-    SoftwareControlled = 2
-}
-
-impl Default for CSCLKMode {
-    fn default() -> Self {Self::Disabled}
+    SoftwareControlled = 2,
 }
 
 /// Struct that can be used to control the module CSCLK mode
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Eq)]
-pub struct SetCSCLKMode{
+pub struct SetCSCLKMode {
     pub mode: CSCLKMode,
 }
 
