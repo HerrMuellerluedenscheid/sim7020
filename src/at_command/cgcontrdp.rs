@@ -7,6 +7,7 @@ use crate::AtError;
 use defmt::warn;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct PDPContextReadDynamicsParameters;
 
 const APN_MAX_SIZE: usize = 255;
@@ -14,6 +15,8 @@ const LOCAL_ADDRESS_AND_SUBNET_MASK_MAX_SIZE: usize = 255;
 const GATEWAY_ADDRESS_MAX_SIZE: usize = 255;
 const DNS_MAX_SIZE: usize = 128;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct PDPContextReadDynamicsParametersResponse {
     pub cid: i32,
     pub bearer_id: i32,

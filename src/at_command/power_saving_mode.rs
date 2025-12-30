@@ -5,6 +5,7 @@ use crate::AtError;
 use at_commands::parser::CommandParser;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum PowerSavingModeState {
     Disabled,
     Enabled,
@@ -25,6 +26,7 @@ impl From<i32> for PowerSavingModeState {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GetPowerSavingMode;
 
 impl GetPowerSavingMode {
@@ -62,6 +64,7 @@ impl AtRequest for GetPowerSavingMode {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SetPowerSavingMode;
 
 impl SetPowerSavingMode {

@@ -9,11 +9,13 @@ use at_commands::parser::CommandParser;
 use defmt::*;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct HttpClient {
     pub client_id: u8,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpSession<'a> {
     pub client_id: u8,
     pub successful: bool,
@@ -24,22 +26,24 @@ const HTTP_SESSION_SUCCESSFULLY: i32 = 1;
 const HTTP_SESSION_FAILED: i32 = 0;
 const DEFAULT_N_SESSIONS: usize = 4;
 
-/// create a HTTP or HTTPS session
+/// create an HTTP or HTTPS session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct GetHttpSessions<
     const N_SESSIONS: usize = DEFAULT_N_SESSIONS,
     const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE,
 > {}
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum HttpSessionState {
-    Sucessfully,
+    Successfully,
     Failed,
 }
 
 impl From<i32> for HttpSessionState {
     fn from(value: i32) -> Self {
         match value {
-            HTTP_SESSION_SUCCESSFULLY => HttpSessionState::Sucessfully,
+            HTTP_SESSION_SUCCESSFULLY => HttpSessionState::Successfully,
             HTTP_SESSION_FAILED => HttpSessionState::Failed,
             _ => core::unreachable!(),
         }
@@ -48,6 +52,8 @@ impl From<i32> for HttpSessionState {
 
 const DEFAULT_HOST_MAX_SIZE: usize = 255;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpSessionInformation<const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE> {
     pub http_client_id: i32,
     pub state: HttpSessionState,
@@ -157,12 +163,15 @@ impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSION
 
 /// create a HTTP or HTTPS session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct CreateHttpSession<'a> {
     pub host: &'a str,
     pub user: Option<&'a str>,
     pub password: Option<&'a str>,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct CreateHttpSessionResponse {
     pub client_id: u8,
 }
@@ -206,6 +215,7 @@ impl AtRequest for CreateHttpSession<'_> {
 
 /// Connect to a server using http or https
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpConnect {
     pub client_id: u8,
 }
@@ -227,6 +237,7 @@ impl AtRequest for HttpConnect {
 
 /// Disconnect from a server
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpDisconnect {
     pub client_id: u8,
 }
@@ -248,6 +259,7 @@ impl AtRequest for HttpDisconnect {
 
 /// Connect to a server using http or https
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpDestroy {
     pub client_id: u8,
 }
@@ -268,6 +280,7 @@ impl AtRequest for HttpDestroy {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 #[repr(u8)]
 pub enum HttpMethod {
     GET = 0,
@@ -280,6 +293,7 @@ pub enum HttpMethod {
 /// content_type: A string indicate the content type of the content, if the method is not POST and PUT, it must be empty.
 /// content_string: The string converted from content hex data.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct HttpSend<'a> {
     pub client_id: u8,
     pub method: HttpMethod,

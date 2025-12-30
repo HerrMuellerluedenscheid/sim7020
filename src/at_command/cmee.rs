@@ -7,6 +7,7 @@ use crate::AtError;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct ReportMobileEquipmentError;
 
 impl ReportMobileEquipmentError {
@@ -54,6 +55,7 @@ impl AtRequest for ReportMobileEquipmentError {
 
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum ReportMobileEquipmentErrorSetting {
     Disabled = 0,
     Numeric = 1,
@@ -82,6 +84,7 @@ impl From<i32> for ReportMobileEquipmentErrorSetting {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SetReportMobileEquipmentError {
     pub setting: ReportMobileEquipmentErrorSetting,
 }

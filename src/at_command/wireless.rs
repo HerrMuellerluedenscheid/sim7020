@@ -1,6 +1,7 @@
 use crate::at_command::{AtRequest, BufferType};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct StartWirelessConnection;
 
 impl AtRequest for StartWirelessConnection {

@@ -7,10 +7,13 @@ use at_commands::parser::CommandParser;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct LocalIPAddress;
 
 const MAX_IP_SIZE: usize = 39;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct LocalIpAddressResponse {
     pub ip: heapless::String<MAX_IP_SIZE>,
 }

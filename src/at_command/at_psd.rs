@@ -1,5 +1,7 @@
 use crate::at_command::AtRequest;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum PdpType {
     IP,
     IPV6,
@@ -18,6 +20,8 @@ impl PdpType {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SetPSDSettings<'a> {
     pdp_type: PdpType,
     apn: Option<&'a str>,
