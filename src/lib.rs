@@ -157,7 +157,7 @@ impl<'a, T: Write, U: Read, P: OutputPin, D: DelayNs> Modem<'a, T, U, P, D> {
 
         // First we will ensure that the DTR pin is off, so the module does not do goes to sleep
         self.turn_off_dtr()?;
-        // First we will send the AT command to ensure the sleep mode is set
+        // Then we will send the AT command to ensure the sleep mode is set
         self.send_and_wait_response(&SetCSCLKMode { mode })?;
 
         #[cfg(feature = "defmt")]
