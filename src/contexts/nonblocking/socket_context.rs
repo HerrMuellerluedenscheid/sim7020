@@ -7,21 +7,24 @@ use crate::nonblocking::AsyncModem;
 use crate::AtError;
 use core::marker::PhantomData;
 use defmt::debug;
+use embedded_hal::digital::OutputPin;
+use embedded_hal_async::delay::DelayNs;
+use embedded_io::ReadReady;
 use embedded_io_async::{Read, Write};
 
-pub struct AsyncSocketContext<'a, W: Write, R: Read, S> {
+pub struct AsyncSocketContext<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S> {
     socket_id: u8,
-    modem: &'a mut AsyncModem<W, R>,
+    modem: &'a mut AsyncModem<W, R, P, D>,
     _state: PhantomData<S>,
 }
 
-pub async fn new_async_http_session<'a, W: Write, R: Read>(
-    modem: &'a mut AsyncModem<W, R>,
+pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    modem: &'a mut AsyncModem<W, R, P, D>,
     domain: Domain,
     connection_type: Type,
     protocol: Protocol,
     cid: Option<i32>,
-) -> Result<AsyncSocketContext<'a, W, R, PendingConnection>, AtError> {
+) -> Result<AsyncSocketContext<'a, W, R, P, D, PendingConnection>, AtError> {
     #[cfg(feature = "defmt")]
     debug!("Creating a new HTTP Context");
 
@@ -41,8 +44,8 @@ pub async fn new_async_http_session<'a, W: Write, R: Read>(
     })
 }
 
-async fn close_socket_context<'a, W: Write, R: Read, S>(
-    context: AsyncSocketContext<'a, W, R, S>,
+async fn close_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S>(
+    context: AsyncSocketContext<'a, W, R, P, D, S>,
 ) -> Result<(), AtError> {
     context
         .modem
@@ -54,13 +57,15 @@ async fn close_socket_context<'a, W: Write, R: Read, S>(
     Ok(())
 }
 
-impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, PendingConnection> {
+impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
+    AsyncSocketContext<'a, W, R, P, D, PendingConnection>
+{
     /// Connects the socket session to the remote server
     pub async fn connect_to_remote(
         self,
         port: u16,
         address: &str,
-    ) -> Result<AsyncSocketContext<'a, W, R, Connected>, AtError> {
+    ) -> Result<AsyncSocketContext<'a, W, R, P, D, Connected>, AtError> {
         #[cfg(feature = "defmt")]
         debug!("Connecting socket to {}:{}", address, port);
 
@@ -87,7 +92,9 @@ impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, PendingConnection> {
     }
 }
 
-impl<'a, W: Write, R: Read> AsyncSocketContext<'a, W, R, Connected> {
+impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
+    AsyncSocketContext<'a, W, R, P, D, Connected>
+{
     /// Sends the given string to the remote connection
     pub async fn send_string(&mut self, data: &str) -> Result<(), AtError> {
         self.modem
