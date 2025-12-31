@@ -7,6 +7,10 @@ version = "2.2.0"
 license = "MIT"
 repository = "https://github.com/HerrMuellerluedenscheid/sim7020"
 description = "driver for sim7020E NB IoT modem"
+authors = [
+    "Marius Kriegerowski <marius.kriegerowski@gmail.com>",
+    "Javier <javi.mateosegura@gmail.com>"
+]
 
 [dependencies]
 defmt = { version = "1.0.1", optional = true }
@@ -16,10 +20,12 @@ embedded-io-async = { version = "0.7.0", optional = true }
 chrono = { version = "0.4.38", default-features = false }
 log = "0.4.22"
 heapless = "0.9.2"
+embedded-hal = "1.0.0"
+embedded-hal-async = { version = "1.0.0", optional = true }
 
 [features]
 default = []
-nonblocking = ["embedded-io-async"]
+nonblocking = ["embedded-io-async","embedded-hal-async"]
 defmt = ["dep:defmt", "embedded-io/defmt", "heapless/defmt"]
 
 

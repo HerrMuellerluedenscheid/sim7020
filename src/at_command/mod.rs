@@ -28,6 +28,7 @@ pub mod ceer;
 pub mod cgcontrdp;
 pub mod clock;
 pub mod cmee;
+pub mod csclk;
 pub(crate) mod flow_control;
 pub mod http;
 pub mod ip_address;
