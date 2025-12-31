@@ -98,8 +98,6 @@ pub struct ConnectSocketToRemote<'a> {
     pub port: u16,
     /// Address of the server which we want to connect to
     pub remote_address: &'a str,
-    /// Communication type that will be used
-    pub connection_type: Type,
 }
 
 impl AtRequest for ConnectSocketToRemote<'_> {
@@ -111,8 +109,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
             .named("+CSOCON")
             .with_int_parameter(self.socket_id)
             .with_int_parameter(self.port as i32)
-            .with_string_parameter(self.remote_address)
-            .with_int_parameter(self.connection_type as u8);
+            .with_string_parameter(self.remote_address);
 
         builder.finish()
     }
@@ -133,9 +130,7 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
-    /// Length of the data we want to send
-    pub data_len: u16,
-    /// Data to be send
+    /// Data to be sent.
     pub data: &'a [u8],
 }
 
@@ -146,8 +141,43 @@ impl AtRequest for SendSocketMessage<'_> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
-            .with_int_parameter(self.data_len)
-            .with_raw_parameter(self.data);
+            .with_int_parameter(self.data.len() as u16)
+            .with_rax_hex_parameter(self.data);
+
+        builder.finish()
+    }
+
+    #[allow(deprecated)]
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
+        verify_ok(data)?;
+
+        Ok(AtResponse::Ok)
+    }
+
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
+        verify_ok(data)?;
+
+        Ok(())
+    }
+}
+
+/// Struct used to send data through the socket
+pub struct SendSocketString<'a> {
+    /// Socket ID obtained by using [CreateSocket]
+    pub socket_id: u8,
+    /// Data to be send. Must be in hex format
+    pub data: &'a str,
+}
+
+impl AtRequest for SendSocketString<'_> {
+    type Response = ();
+
+    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+        let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
+            .named("+CSOSEND")
+            .with_int_parameter(self.socket_id)
+            .with_int_parameter(0)
+            .with_string_parameter(self.data);
 
         builder.finish()
     }
@@ -253,7 +283,6 @@ mod test {
         let mut buffer = [0; 512];
 
         let at_connect_request = ConnectSocketToRemote {
-            connection_type: super::Type::TCP,
             port: 1111,
             socket_id: 1,
             remote_address: "127.0.0.1",
@@ -263,7 +292,7 @@ mod test {
 
         assert_eq!(
             core::str::from_utf8(result).unwrap(),
-            "AT+CSOCON=1,1111,\"127.0.0.1\",1\r\n"
+            "AT+CSOCON=1,1111,\"127.0.0.1\"\r\n"
         );
     }
 
@@ -273,7 +302,6 @@ mod test {
         let mut buffer = [0; 512];
 
         let at_connect_request = ConnectSocketToRemote {
-            connection_type: super::Type::TCP,
             port: 0,
             socket_id: 1,
             remote_address: "127.0.0.1",

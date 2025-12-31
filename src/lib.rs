@@ -6,6 +6,7 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
+pub mod contexts;
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
 use crate::at_command::flow_control::ControlFlowStatus;
