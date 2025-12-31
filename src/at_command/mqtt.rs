@@ -6,7 +6,7 @@ use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
 use defmt::{error, info};
-use embedded_io::{Read, Write};
+use embedded_io::{Read, ReadReady, Write};
 
 const MAX_SERVER_LEN: usize = 50;
 
@@ -30,7 +30,7 @@ impl<'a> Mqtt<'a> {
             session_wrapper,
         }
     }
-    pub fn create_session<T: Write, U: Read>(
+    pub fn create_session<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<Self, MQTTError> {
@@ -43,7 +43,7 @@ impl<'a> Mqtt<'a> {
         })
     }
 
-    pub fn connect<T: Write, U: Read>(
+    pub fn connect<T: Write, U: Read + ReadReady>(
         self,
         connection_settings: MQTTConnectionSettings,
         modem: &mut Modem<'_, T, U>,
@@ -55,7 +55,7 @@ impl<'a> Mqtt<'a> {
         })
     }
 
-    pub fn disconnect<T: Write, U: Read>(
+    pub fn disconnect<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<Self, MQTTError> {
@@ -87,7 +87,7 @@ impl<'a> Mqtt<'a> {
     ) -> Result<(), MQTTError>
     where
         T: Write,
-        U: Read,
+        U: Read + ReadReady,
     {
         self.session_wrapper.publish(message, p1)
     }
@@ -100,7 +100,7 @@ enum MQTTSessionWrapper {
 }
 
 impl MQTTSessionWrapper {
-    fn create_session<T: Write, U: Read>(
+    fn create_session<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
         session_settings: &MQTTSessionSettings,
@@ -122,7 +122,7 @@ impl MQTTSessionWrapper {
         }
     }
 
-    fn connect<T: Write, U: Read>(
+    fn connect<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
         connection_settings: MQTTConnectionSettings,
@@ -147,7 +147,7 @@ impl MQTTSessionWrapper {
         }
     }
 
-    pub(crate) fn publish<T: Write, U: Read>(
+    pub(crate) fn publish<T: Write, U: Read + ReadReady>(
         &self,
         p0: &MQTTMessage,
         p1: &mut Modem<'_, T, U>,
@@ -190,7 +190,7 @@ impl MQTTSession<StateDisconnected> {
         }
     }
 
-    pub fn create_session<T: Write, U: Read>(
+    pub fn create_session<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
         session_settings: &MQTTSessionSettings,
@@ -205,7 +205,7 @@ impl MQTTSession<StateDisconnected> {
 }
 
 impl MQTTSession<StateConnected> {
-    pub fn disconnect<T: Write, U: Read>(
+    pub fn disconnect<T: Write, U: Read + ReadReady>(
         &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
@@ -217,7 +217,7 @@ impl MQTTSession<StateConnected> {
         })
     }
 
-    pub fn connect<T: Write, U: Read>(
+    pub fn connect<T: Write, U: Read + ReadReady>(
         self,
         modem: &mut Modem<'_, T, U>,
         connection_settings: MQTTConnectionSettings,
@@ -232,7 +232,7 @@ impl MQTTSession<StateConnected> {
 }
 
 impl MQTTSession<StateConnectedGood> {
-    fn disconnect<T: Write, U: Read>(
+    fn disconnect<T: Write, U: Read + ReadReady>(
         &self,
         modem: &mut Modem<'_, T, U>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
@@ -244,7 +244,7 @@ impl MQTTSession<StateConnectedGood> {
         })
     }
 
-    fn publish<T: Write, U: Read>(
+    fn publish<T: Write, U: Read + ReadReady>(
         &self,
         message: &MQTTMessage,
         modem: &mut Modem<'_, T, U>,
@@ -270,7 +270,7 @@ pub enum MQTTConnection {
 }
 
 impl MQTTConnection {
-    pub fn publish<T: Write, U: Read>(
+    pub fn publish<T: Write, U: Read + ReadReady>(
         &self,
         message: &MQTTMessage,
         modem: &mut Modem<'_, T, U>,
