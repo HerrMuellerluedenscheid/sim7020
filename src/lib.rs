@@ -406,7 +406,7 @@ impl<'a, T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs> Modem<'a, T, U
     ///
     /// You can use [max_unlock_tries] to indicate how many times you want to try to unlock
     /// the SIM. If None is passed them [MAX_UNLOCK_TRIES] will be used as max tries.
-    pub fn try_to_unlock_sim<N>(
+    pub fn try_to_unlock_sim(
         &mut self,
         pin: u16,
         max_unlock_tries: Option<usize>,
