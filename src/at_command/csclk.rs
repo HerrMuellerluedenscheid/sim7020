@@ -29,7 +29,7 @@ impl AtRequest for SetCSCLKMode {
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
-            .named("CSCLK")
+            .named("+CSCLK")
             .with_int_parameter(self.mode as u8)
             .finish()
     }
