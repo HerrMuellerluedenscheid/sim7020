@@ -80,9 +80,11 @@ impl From<&str> for PinStatus {
 impl PINRequired {
     fn get_pin_response(data: &[u8]) -> Result<PinStatus, AtError> {
         let response_code = at_commands::parser::CommandParser::parse(data)
+            .trim_whitespace()
             .expect_identifier(b"+CPIN: ")
             .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         let pin_status: PinStatus = response_code.0.into();
@@ -135,8 +137,96 @@ impl AtRequest for EnterPIN {
 
 #[cfg(test)]
 mod test {
-    #![allow(deprecated)]
     use super::*;
+    mod deprecated {
+        #![allow(deprecated)]
+        use super::*;
+
+
+        #[test]
+        fn test_parse_pin_ready() -> Result<(), AtError> {
+            let req = PINRequired;
+
+            let data = b"+CPIN: READY\r\n\r\nOK\r\n";
+
+            let response = req.parse_response(data)?;
+
+            match response {
+                AtResponse::PinStatus(status) => {
+                    assert_eq!(status, PinStatus::Ready);
+                }
+                _ => panic!("Unexpected response type"),
+            }
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_parse_pin_sim_pin() -> Result<(), AtError> {
+            let req = PINRequired;
+
+            let data = b"+CPIN: SIM PIN\r\n\r\nOK\r\n";
+
+            let response = req.parse_response(data)?;
+
+            match response {
+                AtResponse::PinStatus(status) => {
+                    assert_eq!(status, PinStatus::SimPin);
+                }
+                _ => panic!("Unexpected response type"),
+            }
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_parse_pin_ph_net_pin() -> Result<(), AtError> {
+            let req = PINRequired;
+
+            let data = b"+CPIN: PH-NET PIN\r\n\r\nOK\r\n";
+
+            let response = req.parse_response(data)?;
+
+            match response {
+                AtResponse::PinStatus(status) => {
+                    assert_eq!(status, PinStatus::PhNetPin);
+                }
+                _ => panic!("Unexpected response type"),
+            }
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_parse_pin_unknown_status() -> Result<(), AtError> {
+            let req = PINRequired;
+
+            let data = b"+CPIN: FOO\r\n\r\nOK\r\n";
+
+            let response = req.parse_response(data)?;
+
+            match response {
+                AtResponse::PinStatus(status) => {
+                    assert_eq!(status, PinStatus::Unkown);
+                }
+                _ => panic!("Unexpected response type"),
+            }
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_parse_pin_malformed_response() {
+            let req = PINRequired;
+
+            // No parameter after +CPIN
+            let data = b"+CPIN\r\n\r\nOK\r\n";
+
+            let result = req.parse_response(data);
+
+            assert!(result.is_err());
+        }
+    }
 
     #[test]
     fn test_parse_pin_ready() -> Result<(), AtError> {
@@ -144,14 +234,8 @@ mod test {
 
         let data = b"+CPIN: READY\r\n\r\nOK\r\n";
 
-        let response = req.parse_response(data)?;
-
-        match response {
-            AtResponse::PinStatus(status) => {
-                assert_eq!(status, PinStatus::Ready);
-            }
-            _ => panic!("Unexpected response type"),
-        }
+        let response = req.parse_response_struct(data)?;
+        assert_eq!(response, PinStatus::Ready);
 
         Ok(())
     }
@@ -162,14 +246,9 @@ mod test {
 
         let data = b"+CPIN: SIM PIN\r\n\r\nOK\r\n";
 
-        let response = req.parse_response(data)?;
+        let response = req.parse_response_struct(data)?;
 
-        match response {
-            AtResponse::PinStatus(status) => {
-                assert_eq!(status, PinStatus::SimPin);
-            }
-            _ => panic!("Unexpected response type"),
-        }
+        assert_eq!(response, PinStatus::SimPin);
 
         Ok(())
     }
@@ -180,14 +259,9 @@ mod test {
 
         let data = b"+CPIN: PH-NET PIN\r\n\r\nOK\r\n";
 
-        let response = req.parse_response(data)?;
+        let response = req.parse_response_struct(data)?;
 
-        match response {
-            AtResponse::PinStatus(status) => {
-                assert_eq!(status, PinStatus::PhNetPin);
-            }
-            _ => panic!("Unexpected response type"),
-        }
+        assert_eq!(response, PinStatus::PhNetPin);
 
         Ok(())
     }
@@ -198,14 +272,9 @@ mod test {
 
         let data = b"+CPIN: FOO\r\n\r\nOK\r\n";
 
-        let response = req.parse_response(data)?;
+        let response = req.parse_response_struct(data)?;
 
-        match response {
-            AtResponse::PinStatus(status) => {
-                assert_eq!(status, PinStatus::Unkown);
-            }
-            _ => panic!("Unexpected response type"),
-        }
+        assert_eq!(response, PinStatus::Unkown);
 
         Ok(())
     }
@@ -217,7 +286,7 @@ mod test {
         // No parameter after +CPIN
         let data = b"+CPIN\r\n\r\nOK\r\n";
 
-        let result = req.parse_response(data);
+        let result = req.parse_response_struct(data);
 
         assert!(result.is_err());
     }
