@@ -141,7 +141,9 @@ impl AtRequest for SendSocketMessage<'_> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
-            .with_int_parameter(self.data.len() as u16)
+            // The data size must be multiplied by 2, we need to indicate the hex length
+            // for each byte that we will write there will be 2 hex bytes
+            .with_int_parameter((self.data.len() as u16) * 2)
             .with_rax_hex_parameter(self.data);
 
         builder.finish()
