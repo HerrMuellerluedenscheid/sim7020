@@ -106,10 +106,28 @@ pub trait AtRequest {
 
 pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
     at_commands::parser::CommandParser::parse(data)
-        .expect_optional_identifier(b"\r")
-        .expect_optional_identifier(b"\n")
-        .expect_identifier(b"OK\r")
+        .trim_whitespace()
+        .expect_identifier(b"OK")
         .finish()?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+
+    #[test]
+    fn test_very_ok(){
+        const OK_1: &[u8] = b"\r\nOK";
+        verify_ok(OK_1).unwrap();
+        const OK_2: &[u8] = b"\r\nOK\r\n";
+        verify_ok(OK_2).unwrap();
+        const OK_3: &[u8] = b"OK\r\n";
+        verify_ok(OK_3).unwrap();
+        const OK_4: &[u8] = b"OK";
+        verify_ok(OK_4).unwrap();
+    }
 }
