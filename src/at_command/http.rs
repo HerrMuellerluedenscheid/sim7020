@@ -66,7 +66,7 @@ pub struct HttpSessionInformation<const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_
 impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<HOST_MAX_SIZE> {
     type Response = [HttpSessionInformation<HOST_MAX_SIZE>; DEFAULT_N_SESSIONS];
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let cmd = CommandBuilder::create_query(buffer, true)
             .named(b"+CHTTPCREATE")
             .finish();
@@ -199,7 +199,7 @@ impl CreateHttpSession<'_> {
 impl AtRequest for CreateHttpSession<'_> {
     type Response = CreateHttpSessionResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPCREATE")
             .with_string_parameter(self.host)
@@ -231,7 +231,7 @@ pub struct HttpConnect {
 impl AtRequest for HttpConnect {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPCON")
             .with_int_parameter(self.client_id)
@@ -253,7 +253,7 @@ pub struct HttpDisconnect {
 impl AtRequest for HttpDisconnect {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPDISCON")
             .with_int_parameter(self.client_id)
@@ -275,7 +275,7 @@ pub struct HttpDestroy {
 impl AtRequest for HttpDestroy {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CHTTPDESTROY")
             .with_int_parameter(self.client_id)
@@ -311,7 +311,7 @@ pub struct HttpSend<'a> {
 impl AtRequest for HttpSend<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let method: u8 = match self.method {
             HttpMethod::GET => 0,
             HttpMethod::POST => 1,

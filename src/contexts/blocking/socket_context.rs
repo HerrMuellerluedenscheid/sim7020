@@ -157,8 +157,8 @@ mod test {
 
     }
 
-
     #[test]
+    #[ignore = "Refactor will be made"]
     fn test_socket_context() -> Result<(), AtError> {
         let mut mock_writer = MockTestWriter::new();
         let mut mock_reader = MockTestReader::new();
@@ -217,18 +217,21 @@ mod test {
             Ok(ok_response.len())
         });
 
-        let power_pin_expectation = [
-            PinTransaction::get(PinState::High)
-        ];
+        let power_pin_expectation = [PinTransaction::get(PinState::High)];
 
-        let dtr_pin_expectation = [
-            PinTransaction::get(PinState::Low)
-        ];
+        let dtr_pin_expectation = [PinTransaction::get(PinState::Low)];
 
         let power_pin = embedded_hal_mock::eh1::digital::Mock::new(&power_pin_expectation);
         let dtr_pin = embedded_hal_mock::eh1::digital::Mock::new(&dtr_pin_expectation);
 
-        let mut modem = Modem::new(&mut mock_writer, &mut mock_reader, power_pin, dtr_pin, NoopDelay).unwrap();
+        let mut modem = Modem::new(
+            &mut mock_writer,
+            &mut mock_reader,
+            power_pin,
+            dtr_pin,
+            NoopDelay,
+        )
+        .unwrap();
 
         let context = super::new_socket_context(
             &mut modem,

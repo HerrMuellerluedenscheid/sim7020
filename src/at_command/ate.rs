@@ -1,5 +1,5 @@
 //! Module to handle the AT echo
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::AtRequest;
 use crate::AtError;
 
 /// Echo status
@@ -28,7 +28,7 @@ pub struct AtEchoState;
 impl AtRequest for AtEchoState {
     type Response = ();
 
-    fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, _buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let command = "ATE?\r\n";
         Ok(command.as_bytes())
     }
@@ -48,7 +48,7 @@ pub struct AtEcho {
 impl AtRequest for AtEcho {
     type Response = ();
 
-    fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, _buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let command = match self.status {
             Echo::Disable => "ATE0\r\n",
             Echo::Enable => "ATE1\r\n",

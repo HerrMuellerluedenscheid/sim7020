@@ -1,3 +1,6 @@
+//! This module contains the code related to at_commands that will be used to communicate with
+//! the SIM7020 module.
+//! All this commands are defined in the AT commands guide of the module
 use crate::at_command::at_cgatt::GPRSServiceState;
 use crate::at_command::at_cpin::PinStatus;
 use crate::at_command::battery::BatteryChargeStatus;
@@ -84,15 +87,21 @@ mod deprecated {
 #[deprecated(since = "3.0.0", note = "Now each type has it's own response type.")]
 pub type AtResponse = deprecated::AtResponse;
 
+/// Defines a generic trait for the defined AT commands
 pub trait AtRequest {
+    /// Type response of the command
     type Response;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize>;
+    /// Gets the command to be sent to the module
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize>;
 
-    fn get_command_no_error<'a>(&'a self, buffer: &'a mut BufferType) -> &'a [u8] {
+    /// Gets the command to be sent to the module unwrapping any possible error
+    fn get_command_no_error<'a>(&'a self, buffer: &'a mut [u8]) -> &'a [u8] {
         self.get_command(buffer).expect("buffer too small")
     }
 
+    /// Parses the response and get the [AtResponse] this method is deprecated and
+    /// [parse_response_struct] should be used instead
     #[deprecated(since = "3.0.0", note = "Migrate to parse_response_struct")]
     #[allow(deprecated)]
     fn parse_response(&self, _data: &[u8]) -> Result<AtResponse, AtError> {
@@ -101,9 +110,11 @@ pub trait AtRequest {
         Ok(AtResponse::Ok)
     }
 
-    fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError>;
+    /// Parses the given data and returns a [Result] which contains the [Response] type defined
+    fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError>;
 }
 
+/// Verifies if the data contains an OK ignoring any leading whitespaces
 pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
     at_commands::parser::CommandParser::parse(data)
         .trim_whitespace()
@@ -118,9 +129,8 @@ mod test {
 
     use super::*;
 
-
     #[test]
-    fn test_very_ok(){
+    fn test_very_ok() {
         const OK_1: &[u8] = b"\r\nOK";
         verify_ok(OK_1).unwrap();
         const OK_2: &[u8] = b"\r\nOK\r\n";

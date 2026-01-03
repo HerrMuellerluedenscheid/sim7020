@@ -9,7 +9,7 @@ pub struct StartWirelessConnection;
 impl AtRequest for StartWirelessConnection {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_execute(buffer, true)
             .named("+CIICR")
             .finish()

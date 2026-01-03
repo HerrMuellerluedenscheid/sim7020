@@ -28,7 +28,7 @@ impl ReportMobileEquipmentError {
 impl AtRequest for ReportMobileEquipmentError {
     type Response = ReportMobileEquipmentErrorSetting;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CMEE")
             .finish()
@@ -97,7 +97,7 @@ pub struct SetReportMobileEquipmentError {
 impl AtRequest for SetReportMobileEquipmentError {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let setting = match self.setting {
             ReportMobileEquipmentErrorSetting::Disabled => 0,
             ReportMobileEquipmentErrorSetting::Numeric => 1,

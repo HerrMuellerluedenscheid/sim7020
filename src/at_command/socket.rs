@@ -72,7 +72,7 @@ impl CreateSocket {
 impl AtRequest for CreateSocket {
     type Response = SocketCreated;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let mut builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOC")
             .with_int_parameter(self.domain as u8)
@@ -115,7 +115,7 @@ pub struct ConnectSocketToRemote<'a> {
 impl AtRequest for ConnectSocketToRemote<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         assert!(self.port > 0);
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOCON")
@@ -151,7 +151,7 @@ pub struct SendSocketMessage<'a> {
 impl AtRequest for SendSocketMessage<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
@@ -188,7 +188,7 @@ pub struct SendSocketString<'a> {
 impl AtRequest for SendSocketString<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOSEND")
             .with_int_parameter(self.socket_id)
@@ -223,7 +223,7 @@ pub struct CloseSocket {
 impl AtRequest for CloseSocket {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let builder = at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSOCL")
             .with_int_parameter(self.socket_id);

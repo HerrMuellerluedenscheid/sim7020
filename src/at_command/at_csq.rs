@@ -1,7 +1,7 @@
 //! This module contains the required implementations to get the signal report
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 /// Queries the signal report
@@ -37,7 +37,7 @@ impl SignalQualityReport {
 impl AtRequest for SignalQualityReport {
     type Response = SignalQualityResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_execute(buffer, true)
             .named("+CSQ")
             .finish()

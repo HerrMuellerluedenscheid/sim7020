@@ -39,7 +39,7 @@ pub struct SetPSDSettings<'a> {
 impl AtRequest for SetPSDSettings<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut super::BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("*MCGDEFCONT")
             .with_string_parameter(self.pdp_type.as_str())
@@ -68,26 +68,25 @@ mod test {
     }
 
     #[test]
-    fn test_set_psd_settings_request(){
-        let mut buffer = [0u8;512];
+    fn test_set_psd_settings_request() {
+        let mut buffer = [0u8; 512];
 
         let command = SetPSDSettings {
             pdp_type: PdpType::IP,
             apn: None,
             username: None,
-            password: None
+            password: None,
         };
 
         let data = command.get_command(&mut buffer).unwrap();
 
         assert_eq!(data, b"AT*MCGDEFCONT=\"IP\",,,\r\n");
 
-
         let command = SetPSDSettings {
             pdp_type: PdpType::IP,
             apn: Some("APN"),
             username: None,
-            password: None
+            password: None,
         };
 
         let data = command.get_command(&mut buffer).unwrap();
@@ -98,7 +97,7 @@ mod test {
             pdp_type: PdpType::IP,
             apn: Some("APN"),
             username: Some("USERNAME"),
-            password: None
+            password: None,
         };
 
         let data = command.get_command(&mut buffer).unwrap();
@@ -109,23 +108,26 @@ mod test {
             pdp_type: PdpType::IP,
             apn: Some("APN"),
             username: Some("USERNAME"),
-            password: Some("PASSWORD")
+            password: Some("PASSWORD"),
         };
 
         let data = command.get_command(&mut buffer).unwrap();
 
-        assert_eq!(data, b"AT*MCGDEFCONT=\"IP\",\"APN\",\"USERNAME\",\"PASSWORD\"\r\n");
+        assert_eq!(
+            data,
+            b"AT*MCGDEFCONT=\"IP\",\"APN\",\"USERNAME\",\"PASSWORD\"\r\n"
+        );
     }
 
     #[test]
-    fn test_set_psd_settings_response(){
+    fn test_set_psd_settings_response() {
         let data = b"\r\nOK\r\n";
 
         let command = SetPSDSettings {
             pdp_type: PdpType::IP,
             apn: None,
             username: None,
-            password: None
+            password: None,
         };
 
         command.parse_response_struct(data).unwrap();

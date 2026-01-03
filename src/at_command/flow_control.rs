@@ -61,7 +61,7 @@ impl From<i32> for ControlFlowStatus {
 impl AtRequest for SetFlowControl {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+IFC")
             .with_int_parameter(self.ta_to_te.to_int())
@@ -105,7 +105,7 @@ impl GetFlowControl {
 impl AtRequest for GetFlowControl {
     type Response = GetFlowControlResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+IFC")
             .finish()

@@ -1,8 +1,8 @@
 //! Module to handle the SIM pin commands
 
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 /// Command to check the current SIM status
@@ -101,7 +101,7 @@ impl PINRequired {
 impl AtRequest for PINRequired {
     type Response = PinStatus;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CPIN")
             .finish()
@@ -128,7 +128,7 @@ pub struct EnterPIN {
 impl AtRequest for EnterPIN {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CPIN")
             .with_int_parameter(self.pin)

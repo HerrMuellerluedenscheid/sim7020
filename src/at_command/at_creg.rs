@@ -3,9 +3,9 @@
 use crate::at_command::network_registration_status::{
     NetworkRegistrationStatus, UnsolicitedResultCodes,
 };
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 /// Struct to query the network registration status
@@ -46,7 +46,7 @@ impl NetworkRegistration {
 impl AtRequest for NetworkRegistration {
     type Response = NetworkRegistrationResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CREG")
             .finish()
@@ -75,7 +75,7 @@ pub struct AtCregError;
 impl AtRequest for AtCregError {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CREG")
             .with_int_parameter(5)
@@ -93,8 +93,7 @@ mod test {
 
     #[test]
     fn test_network_registration_command() {
-
-        let mut buffer = [0u8;512];
+        let mut buffer = [0u8; 512];
         let command = NetworkRegistration.get_command(&mut buffer).unwrap();
 
         assert_eq!(command, b"AT+CREG?\r\n");

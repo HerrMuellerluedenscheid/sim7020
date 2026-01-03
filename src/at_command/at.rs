@@ -1,8 +1,8 @@
 //! Module to handle the basic AT commands
 
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 #[cfg(feature = "defmt")]
 use defmt::{error, info};
@@ -34,7 +34,7 @@ impl At {
 impl AtRequest for At {
     type Response = ();
 
-    fn get_command<'a>(&'a self, _buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, _buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         Ok("AT\r\n".as_bytes())
     }
 

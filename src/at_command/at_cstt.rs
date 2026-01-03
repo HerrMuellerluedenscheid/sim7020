@@ -1,6 +1,6 @@
 //! Module containing the structs that are necessary to interact with the APN configuration
 
-use crate::at_command::{verify_ok, AtRequest, BufferType};
+use crate::at_command::{verify_ok, AtRequest};
 use crate::AtError;
 
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
@@ -25,7 +25,7 @@ pub struct APNUserPassword {
 impl AtRequest for GetAPNUserPassword {
     type Response = APNUserPassword;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CSTT")
             .finish()
@@ -96,7 +96,7 @@ impl<'a> SetAPNUserPassword<'a> {
 impl AtRequest for SetAPNUserPassword<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSTT")
             .with_optional_string_parameter(self.apn)

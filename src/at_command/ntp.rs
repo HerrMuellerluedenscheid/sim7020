@@ -13,7 +13,7 @@ pub struct StartQueryNTP<'a> {
 impl AtRequest for StartQueryNTP<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         match &self.tzinfo {
             None => at_commands::builder::CommandBuilder::create_set(buffer, true)
                 .named("+CSNTPSTART")
@@ -40,7 +40,7 @@ pub struct StopQueryNTP;
 impl AtRequest for StopQueryNTP {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CSNTPSTOP")
             .finish()

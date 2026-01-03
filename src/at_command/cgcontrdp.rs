@@ -24,7 +24,7 @@ const DNS_MAX_SIZE: usize = 128;
 
 /// Struct containig the PDP dynamic parameters
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PDPContextReadDynamicsParametersResponse {
     /// The CID
     pub cid: i32,
@@ -51,7 +51,7 @@ pub struct PDPContextReadDynamicsParametersResponse {
 impl AtRequest for PDPContextReadDynamicsParameters {
     type Response = Option<PDPContextReadDynamicsParametersResponse>;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CGCONTRDP")
             .finish()
@@ -159,9 +159,11 @@ mod test {
     use super::*;
     #[test]
     fn test_pdpcontext_read_dynamics_parameters_request() {
-        let mut buffer = [0u8;512];
+        let mut buffer = [0u8; 512];
 
-        let request = PDPContextReadDynamicsParameters.get_command(&mut buffer).unwrap();
+        let request = PDPContextReadDynamicsParameters
+            .get_command(&mut buffer)
+            .unwrap();
 
         assert_eq!(request, b"AT+CGCONTRDP=\r\n");
     }
@@ -170,25 +172,32 @@ mod test {
     fn test_pdpcontext_read_dynamic_parameters_response() {
         let data = b"+CGCONTRDP: 1,1,\"APN\",\"127.0.0.1.255.255.255.0\",\"127.0.0.1\",\"127.0.0.1\",\"127.0.0.1\",1,1,\r\n\r\nOK\r\n";
 
-        let response = PDPContextReadDynamicsParameters.parse_response_struct(data).unwrap().unwrap();
+        let response = PDPContextReadDynamicsParameters
+            .parse_response_struct(data)
+            .unwrap()
+            .unwrap();
 
-
-        assert_eq!(response,PDPContextReadDynamicsParametersResponse {
-            cid: 1,
-            bearer_id: 1,
-            apn: "APN".try_into().unwrap(),
-            local_address_and_subnet_mask: Some("127.0.0.1.255.255.255.0".parse().unwrap()),
-            gateway_address: Some("127.0.0.1".parse().unwrap()),
-            primary_dns_address: Some("127.0.0.1".parse().unwrap()),
-            secondary_dns_address: Some("127.0.0.1".parse().unwrap()),
-            ipv4_mtu: Some(1),
-            non_ip_mtu: Some(1),
-            serving_plmn_rate_control_value: None,
-        } );
+        assert_eq!(
+            response,
+            PDPContextReadDynamicsParametersResponse {
+                cid: 1,
+                bearer_id: 1,
+                apn: "APN".try_into().unwrap(),
+                local_address_and_subnet_mask: Some("127.0.0.1.255.255.255.0".parse().unwrap()),
+                gateway_address: Some("127.0.0.1".parse().unwrap()),
+                primary_dns_address: Some("127.0.0.1".parse().unwrap()),
+                secondary_dns_address: Some("127.0.0.1".parse().unwrap()),
+                ipv4_mtu: Some(1),
+                non_ip_mtu: Some(1),
+                serving_plmn_rate_control_value: None,
+            }
+        );
 
         let data = b"OK\r\n";
 
-        let response = PDPContextReadDynamicsParameters.parse_response_struct(data).unwrap();
+        let response = PDPContextReadDynamicsParameters
+            .parse_response_struct(data)
+            .unwrap();
 
         assert!(response.is_none());
     }

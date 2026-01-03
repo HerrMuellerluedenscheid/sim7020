@@ -402,7 +402,7 @@ impl MQTTSessionSettings<'_> {
 impl AtRequest for MQTTSessionSettings<'_> {
     type Response = MqttSessionId;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQNEW")
             .with_string_parameter(self.server)
@@ -476,7 +476,7 @@ impl GetMQTTSession {
 impl AtRequest for GetMQTTSession {
     type Response = GetMQTTSessionResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_query(buffer, true)
             .named("+CMQNEW")
             .finish()
@@ -517,7 +517,7 @@ pub struct CloseMQTTConnection {
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
             .with_int_parameter(self.mqtt_id)
@@ -594,7 +594,7 @@ impl<'a> MQTTConnectionSettings<'a> {
 impl AtRequest for MQTTConnectionSettingsWithID<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let version: u8 = match self.version {
             MQTTVersion::MQTT31 => 3,
             MQTTVersion::MQTT311 => 4,
@@ -635,7 +635,7 @@ pub struct MQTTRawData {
 impl AtRequest for MQTTRawData {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let format = match self.data_format {
             MQTTDataFormat::Bytes => 0,
             MQTTDataFormat::Hex => 1,
@@ -682,7 +682,7 @@ pub struct MQTTPublish<'a> {
 impl AtRequest for MQTTPublish<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQPUB")
             .with_int_parameter(self.mqtt_id)
@@ -711,7 +711,7 @@ pub struct MQTTSubscribe<'a> {
 impl AtRequest for MQTTSubscribe<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQSUB")
             .with_int_parameter(self.mqtt_id)
@@ -796,7 +796,6 @@ mod test {
         assert_eq!(response.server.as_str(), "mqtt.example.com");
     }
 
-
     #[test]
     fn close_mqtt_connection_get_command() {
         let close = CloseMQTTConnection { mqtt_id: 5 };
@@ -833,7 +832,6 @@ mod test {
         };
         let mut buffer: [u8; 512] = [0; 512];
         let cmd = raw.get_command(&mut buffer).unwrap();
-
     }
 
     #[test]

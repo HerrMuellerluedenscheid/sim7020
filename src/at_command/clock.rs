@@ -28,7 +28,7 @@ impl Clock {
 
 impl AtRequest for Clock {
     type Response = NaiveDateTime;
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_query(buffer, true)
             .named("+CCLK")
             .finish()
@@ -51,7 +51,6 @@ mod test {
     use super::*;
     use chrono::{NaiveDate, NaiveTime};
 
-
     #[test]
     fn clock_get_command() {
         let cmd = Clock;
@@ -71,7 +70,7 @@ mod test {
 
         let expected = NaiveDateTime::new(
             NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
-            NaiveTime::from_hms_opt(13, 45, 59).unwrap()
+            NaiveTime::from_hms_opt(13, 45, 59).unwrap(),
         );
 
         assert_eq!(timestamp, expected);

@@ -27,7 +27,7 @@ pub struct SetCSCLKMode {
 impl AtRequest for SetCSCLKMode {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CSCLK")
             .with_int_parameter(self.mode as u8)
