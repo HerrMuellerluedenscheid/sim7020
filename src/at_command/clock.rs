@@ -1,9 +1,12 @@
+//! Module to handle clock commands
+
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use chrono::NaiveDateTime;
 
+/// Request the current clock
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct Clock;
@@ -40,5 +43,37 @@ impl AtRequest for Clock {
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let timestamp = Self::parse_clock_response(data)?;
         Ok(timestamp)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use chrono::{NaiveDate, NaiveTime};
+
+
+    #[test]
+    fn clock_get_command() {
+        let cmd = Clock;
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CCLK?\r\n");
+    }
+    #[test]
+    fn clock_parse_valid_response() {
+        let cmd = Clock;
+
+        let data = b"\r\n+CCLK: 24/01/02,13:45:59+32\r\n\r\nOK";
+
+        let timestamp = cmd.parse_response_struct(data).unwrap();
+
+        let expected = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 1, 2).unwrap(),
+            NaiveTime::from_hms_opt(13, 45, 59).unwrap()
+        );
+
+        assert_eq!(timestamp, expected);
     }
 }
