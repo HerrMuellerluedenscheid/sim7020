@@ -6,10 +6,13 @@ use crate::AtError;
 use defmt::error;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct ModelIdentification {}
+#[derive(PartialEq, Clone)]
+pub struct ModelIdentification;
 
 pub const MODEL_IDENTIFIER_SIZE: usize = 8;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct ModelIdentificationResponse {
     pub model: [u8; MODEL_IDENTIFIER_SIZE],
 }

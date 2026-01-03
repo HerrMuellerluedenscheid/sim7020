@@ -12,13 +12,16 @@ use embedded_io::{Read, ReadReady, Write};
 
 const MAX_SERVER_LEN: usize = 50;
 
-#[cfg_attr(feature = "defmt", derive(defmt::Format, Debug))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum MQTTError {
     ConnectionFailed,
     Disconnected,
     Publish,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct Mqtt<'a> {
     session_settings: &'a MQTTSessionSettings<'a>,
     session_wrapper: MQTTSessionWrapper,
@@ -97,6 +100,8 @@ impl<'a> Mqtt<'a> {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 enum MQTTSessionWrapper {
     Disconnected(MQTTSession<StateDisconnected>),
     Connected(MQTTSession<StateConnected>),
@@ -167,16 +172,24 @@ impl MQTTSessionWrapper {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTSession<S> {
     state: S,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 struct StateDisconnected {}
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 struct StateConnected {
     mqtt_id: u8,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 struct StateConnectedGood {
     mqtt_id: u8,
 }
@@ -268,6 +281,7 @@ impl MQTTSession<StateConnectedGood> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum MQTTConnection {
     Connected(u8),
     Disconnected,
@@ -299,6 +313,7 @@ impl MQTTConnection {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 /// Create a new MQTT connection
 pub struct MQTTSessionSettings<'a> {
     pub server: &'a str,
@@ -340,6 +355,8 @@ impl MQTTSessionSettings<'_> {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MqttSessionId {
     pub mqtt_id: u8,
 }
@@ -382,7 +399,8 @@ impl AtRequest for MQTTSessionSettings<'_> {
     }
 }
 
-#[cfg_attr(feature = "defmt", derive(defmt::Format, Debug))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum UsedState {
     NotUsed,
     Used,
@@ -398,8 +416,12 @@ impl From<i32> for UsedState {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GetMQTTSession {}
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GetMQTTSessionResponse {
     pub mqtt_id: u8,
     pub used_state: UsedState,
@@ -455,6 +477,7 @@ impl AtRequest for GetMQTTSession {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct CloseMQTTConnection {
     pub mqtt_id: u8,
 }
@@ -475,12 +498,15 @@ impl AtRequest for CloseMQTTConnection {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 #[repr(u8)]
 pub enum MQTTVersion {
     MQTT31,
     MQTT311,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct WillOptions<'a> {
     pub topic: &'a str,
     pub quality_of_service: u8,
@@ -488,6 +514,7 @@ pub struct WillOptions<'a> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 struct MQTTConnectionSettingsWithID<'a> {
     mqtt_id: u8,
     version: MQTTVersion,
@@ -501,6 +528,7 @@ struct MQTTConnectionSettingsWithID<'a> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTConnectionSettings<'a> {
     pub version: MQTTVersion,
     pub client_id: &'a str,
@@ -554,12 +582,14 @@ impl AtRequest for MQTTConnectionSettingsWithID<'_> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum MQTTDataFormat {
     Bytes,
     Hex,
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTRawData {
     pub data_format: MQTTDataFormat,
 }
@@ -588,6 +618,7 @@ impl AtRequest for MQTTRawData {
 ///
 /// The message length has to be between 2 and 1000 byte.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTMessage<'a> {
     pub topic: &'a str,    // length max 128b
     pub qos: u8,           // 0 | 1 | 2
@@ -600,6 +631,7 @@ pub struct MQTTMessage<'a> {
 ///
 /// The message length has to be between 2 and 1000 byte.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTPublish<'a> {
     pub mqtt_id: u8,       // AT+CMQNEW response
     pub topic: &'a str,    // length max 128b
@@ -631,6 +663,7 @@ impl AtRequest for MQTTPublish<'_> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct MQTTSubscribe<'a> {
     pub mqtt_id: u8,    // AT+CMQNEW response
     pub topic: &'a str, // length max 128b

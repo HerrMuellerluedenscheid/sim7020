@@ -4,8 +4,11 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SignalQualityReport;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SignalQualityResponse {
     pub rx_signal_strength: i32,
     pub rx_quality: i32,

@@ -6,12 +6,14 @@ use at_commands::parser::CommandParser;
 
 #[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct BatteryChargeStatus {
     capacity_percent: i32,
     voltage_millivolt: i32,
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct BatteryCharge;
 
 impl BatteryCharge {

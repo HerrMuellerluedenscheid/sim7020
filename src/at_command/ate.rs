@@ -2,7 +2,7 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Clone)]
 #[repr(u8)]
 pub enum EchoState {
     Disabled,
@@ -10,7 +10,7 @@ pub enum EchoState {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Clone)]
 #[repr(u8)]
 pub enum Echo {
     Disable = 0,
@@ -18,8 +18,8 @@ pub enum Echo {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Clone, Copy)]
-pub struct AtEchoState {}
+#[derive(PartialEq, Clone)]
+pub struct AtEchoState;
 
 impl AtRequest for AtEchoState {
     type Response = ();
@@ -35,7 +35,7 @@ impl AtRequest for AtEchoState {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Clone)]
 pub struct AtEcho {
     pub status: Echo,
 }

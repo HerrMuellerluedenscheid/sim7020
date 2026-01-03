@@ -4,6 +4,7 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum UnsolicitedResultCodes {
     Disabled,
     Enabled,
@@ -24,6 +25,7 @@ impl From<i32> for UnsolicitedResultCodes {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum NetworkRegistrationStatus {
     NotRegistered,
     RegisteredHomeNetwork,
@@ -54,8 +56,11 @@ impl From<i32> for NetworkRegistrationStatus {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkRegistration;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkRegistrationResponse {
     pub unsolicited: UnsolicitedResultCodes,
     pub status: NetworkRegistrationStatus,

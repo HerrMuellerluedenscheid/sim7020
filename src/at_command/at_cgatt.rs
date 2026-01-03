@@ -5,14 +5,18 @@ use crate::AtError;
 use at_commands::parser::CommandParser;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum GPRSServiceState {
     Detached, // 0
     Attached, // 1
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GPRSServiceStatus;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct PacketDomainAttachmentState {
     pub state: GPRSServiceState,
 }

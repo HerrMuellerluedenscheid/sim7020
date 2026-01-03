@@ -7,6 +7,7 @@ use at_commands::parser::CommandParser;
 use defmt::debug;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum PDPState {
     Deactivated,
     Activated,
@@ -25,6 +26,7 @@ impl From<i32> for PDPState {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct PDPContext;
 
 pub struct PDPContextResponse {

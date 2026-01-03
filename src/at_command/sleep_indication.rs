@@ -5,6 +5,7 @@ use crate::AtError;
 use at_commands::parser::CommandParser;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum SleepIndication {
     Disabled,
     Enabled,
@@ -22,6 +23,8 @@ impl From<i32> for SleepIndication {
     }
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SleepIndicationStatus;
 
 impl SleepIndicationStatus {
