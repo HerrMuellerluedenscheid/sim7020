@@ -1,3 +1,4 @@
+//! Module for the sockets
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::{
@@ -49,7 +50,7 @@ pub struct CreateSocket {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct SocketCreated {
     pub socket_id: u8,
 }
@@ -57,9 +58,11 @@ pub struct SocketCreated {
 impl CreateSocket {
     fn get_socket_id(data: &[u8]) -> Result<u8, AtError> {
         let (socket_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CSOC: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CSOC: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         Ok(socket_id as u8)
@@ -236,10 +239,7 @@ impl AtRequest for CloseSocket {
 #[cfg(test)]
 mod test {
     #![allow(deprecated)]
-    use crate::at_command::{
-        socket::{CloseSocket, ConnectSocketToRemote, CreateSocket, Domain, Protocol, Type},
-        AtRequest, AtResponse,
-    };
+    use super::*;
 
     #[test]
     fn test_create_socket_command() {
@@ -334,5 +334,158 @@ mod test {
         let result = at_connect_request.get_command(&mut buffer).unwrap();
 
         assert_eq!(core::str::from_utf8(result).unwrap(), "AT+CSOCL=0\r\n");
+    }
+
+    #[test]
+    fn domain_enum_values() {
+        assert_eq!(Domain::IPv4 as u8, 1);
+        assert_eq!(Domain::IPv6 as u8, 2);
+    }
+
+    #[test]
+    fn type_enum_values() {
+        assert_eq!(Type::TCP as u8, 1);
+        assert_eq!(Type::UPD as u8, 2);
+        assert_eq!(Type::RAW as u8, 3);
+    }
+
+    #[test]
+    fn protocol_enum_values() {
+        assert_eq!(Protocol::IP as u8, 1);
+        assert_eq!(Protocol::ICMP as u8, 2);
+        assert_eq!(Protocol::UDPLITE as u8, 3);
+    }
+
+    #[test]
+    fn create_socket_command_without_cid() {
+        let cmd = CreateSocket {
+            domain: Domain::IPv4,
+            connection_type: Type::TCP,
+            protocol: Protocol::IP,
+            cid: None,
+        };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CSOC=1,1,1\r\n");
+    }
+
+    #[test]
+    fn create_socket_command_with_cid() {
+        let cmd = CreateSocket {
+            domain: Domain::IPv6,
+            connection_type: Type::RAW,
+            protocol: Protocol::ICMP,
+            cid: Some(3),
+        };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CSOC=2,3,2,3\r\n");
+    }
+
+    #[test]
+    fn create_socket_parse_response_struct() {
+        let data = b"\r\n+CSOC: 5\r\n\r\nOK\r";
+
+        let cmd = CreateSocket {
+            domain: Domain::IPv6,
+            connection_type: Type::RAW,
+            protocol: Protocol::ICMP,
+            cid: Some(3),
+        };
+
+        let resp = cmd.parse_response_struct(data).unwrap();
+
+        assert_eq!(resp, SocketCreated { socket_id: 5 });
+    }
+
+    #[test]
+    fn connect_socket_command() {
+        let cmd = ConnectSocketToRemote {
+            socket_id: 2,
+            port: 1883,
+            remote_address: "127.0.0.1",
+        };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CSOCON=2,1883,\"127.0.0.1\"\r\n");
+    }
+
+    #[test]
+    fn connect_socket_parse_ok() {
+        let data = b"\r\nOK\r\n";
+
+        assert!(ConnectSocketToRemote {
+            socket_id: 1,
+            port: 80,
+            remote_address: "127.0.0.1"
+        }
+        .parse_response_struct(data)
+        .is_ok());
+    }
+
+    #[test]
+    fn send_socket_message_command() {
+        let payload = [0xDE, 0xAD, 0xBE, 0xEF];
+
+        let cmd = SendSocketMessage {
+            socket_id: 1,
+            data: &payload,
+        };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        // length = 4 bytes * 2 hex chars = 8
+        assert_eq!(bytes, b"AT+CSOSEND=1,8,deadbeef\r\n");
+    }
+
+    #[test]
+    fn send_socket_message_parse_ok() {
+        let data = b"\r\nOK\r\n";
+
+        assert!(SendSocketMessage {
+            socket_id: 0,
+            data: &[0x00, 0x01],
+        }
+        .parse_response_struct(data)
+        .is_ok());
+    }
+
+    #[test]
+    fn send_socket_string_command() {
+        let cmd = SendSocketString {
+            socket_id: 3,
+            data: "48656C6C6F",
+        };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CSOSEND=3,0,\"48656C6C6F\"\r\n");
+    }
+
+    #[test]
+    fn close_socket_command() {
+        let cmd = CloseSocket { socket_id: 9 };
+
+        let mut buffer = [0u8; 512];
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CSOCL=9\r\n");
+    }
+
+    #[test]
+    fn close_socket_parse_response_struct() {
+        let data = b"\r\nOK\r\n";
+
+        assert!(CloseSocket { socket_id: 1 }
+            .parse_response_struct(data)
+            .is_ok());
     }
 }
