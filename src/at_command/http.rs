@@ -7,7 +7,7 @@ use at_commands::builder::CommandBuilder;
 use at_commands::parser::CommandParser;
 
 #[cfg(feature = "defmt")]
-use defmt::*;
+use defmt::debug;
 
 /// Response which contains the http client
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
