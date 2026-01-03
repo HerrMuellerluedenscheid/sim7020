@@ -1,3 +1,4 @@
+//! Module to get the model identification information
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{AtRequest, BufferType};
@@ -5,12 +6,15 @@ use crate::AtError;
 #[cfg(feature = "defmt")]
 use defmt::error;
 
+/// Command to get the model identification
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct ModelIdentification;
 
+/// Size of the model
 pub const MODEL_IDENTIFIER_SIZE: usize = 8;
 
+/// Response containing the model identification
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct ModelIdentificationResponse {
@@ -20,9 +24,10 @@ pub struct ModelIdentificationResponse {
 impl ModelIdentification {
     fn get_model(data: &[u8]) -> Result<[u8; MODEL_IDENTIFIER_SIZE], AtError> {
         let (parsed,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n")
+            .trim_whitespace()
             .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()
             .inspect(|_e| {
                 #[cfg(feature = "defmt")]
@@ -55,5 +60,56 @@ impl AtRequest for ModelIdentification {
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         let id = Self::get_model(data)?;
         Ok(ModelIdentificationResponse { model: id })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn model_identification_get_command() {
+        let cmd = ModelIdentification;
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CGMM\r\n");
+    }
+
+    #[test]
+    fn model_identification_parse_exact_size() {
+        let cmd = ModelIdentification;
+
+        let data = b"MODEL123\r\nOK\r\n";
+
+        let response = cmd.parse_response_struct(data).unwrap();
+
+        assert_eq!(response.model, *b"MODEL123");
+    }
+
+    #[test]
+    fn model_identification_parse_short_model() {
+        let cmd = ModelIdentification;
+
+        let data = b"ABC\r\nOK\r\n";
+
+        let response = cmd.parse_response_struct(data).unwrap();
+
+        let mut expected = [0u8; MODEL_IDENTIFIER_SIZE];
+        expected[..3].copy_from_slice(b"ABC");
+
+        assert_eq!(response.model, expected);
+    }
+
+    #[test]
+    fn model_identification_parse_fails_on_empty_response() {
+        let cmd = ModelIdentification;
+
+        let data = b"\r\nOK\r\n";
+
+        let result = cmd.parse_response_struct(data);
+
+        assert!(result.is_err());
     }
 }
