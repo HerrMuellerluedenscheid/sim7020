@@ -6,6 +6,7 @@ use crate::contexts::common_socket_context::{Connected, PendingConnection};
 use crate::nonblocking::AsyncModem;
 use crate::AtError;
 use core::marker::PhantomData;
+#[cfg(feature = "defmt")]
 use defmt::debug;
 use embedded_hal::digital::OutputPin;
 use embedded_hal_async::delay::DelayNs;

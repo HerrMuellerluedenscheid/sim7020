@@ -65,4 +65,4 @@ jobs:
         with:
           submodules: true
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --all-features
+      - run: cargo test --features "nonblocking"

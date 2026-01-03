@@ -20,7 +20,6 @@ use embedded_hal_async::delay::DelayNs;
 #[cfg(feature = "defmt")]
 use embedded_io::Error;
 use embedded_io::ReadReady;
-use log::error;
 
 /// Time that we will await to ensure the system has turned ON
 const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
