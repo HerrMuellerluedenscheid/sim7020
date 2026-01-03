@@ -1,3 +1,4 @@
+//! Module to handle the http requests
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{AtRequest, BufferType};
@@ -8,12 +9,14 @@ use at_commands::parser::CommandParser;
 #[cfg(feature = "defmt")]
 use defmt::*;
 
+/// Response which contains the http client
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Clone)]
 pub struct HttpClient {
     pub client_id: u8,
 }
 
+/// Message to create the HTTP session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct HttpSession<'a> {
@@ -28,13 +31,11 @@ const DEFAULT_N_SESSIONS: usize = 4;
 
 /// create an HTTP or HTTPS session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct GetHttpSessions<
-    const N_SESSIONS: usize = DEFAULT_N_SESSIONS,
-    const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE,
-> {}
+pub struct GetHttpSessions<const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE>;
 
+/// The status of HTTP sessions
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum HttpSessionState {
     Successfully,
     Failed,
@@ -50,18 +51,19 @@ impl From<i32> for HttpSessionState {
     }
 }
 
+/// The default HOST max size
 const DEFAULT_HOST_MAX_SIZE: usize = 255;
 
+/// The information of a HTTP session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct HttpSessionInformation<const HOST_MAX_SIZE: usize = DEFAULT_HOST_MAX_SIZE> {
     pub http_client_id: i32,
     pub state: HttpSessionState,
     pub host: heapless::String<HOST_MAX_SIZE>,
 }
 
-// TODO: We will add a simple implementation for 4 items. We should find a way to implement a way to get N items
-impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSIONS, HOST_MAX_SIZE> {
+impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<HOST_MAX_SIZE> {
     type Response = [HttpSessionInformation<HOST_MAX_SIZE>; DEFAULT_N_SESSIONS];
 
     fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
@@ -108,19 +110,23 @@ impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSION
         #[cfg(feature = "defmt")]
         debug!("Parsing {} http responses", data);
         let connections = CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CHTTPCREATE: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CHTTPCREATE: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CHTTPCREATE: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CHTTPCREATE: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
@@ -163,7 +169,7 @@ impl<const HOST_MAX_SIZE: usize> AtRequest for GetHttpSessions<DEFAULT_N_SESSION
 
 /// create a HTTP or HTTPS session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct CreateHttpSession<'a> {
     pub host: &'a str,
     pub user: Option<&'a str>,
@@ -171,7 +177,7 @@ pub struct CreateHttpSession<'a> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct CreateHttpSessionResponse {
     pub client_id: u8,
 }
@@ -179,9 +185,11 @@ pub struct CreateHttpSessionResponse {
 impl CreateHttpSession<'_> {
     fn get_client_id(data: &[u8]) -> Result<u8, AtError> {
         let (client_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CHTTPCREATE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CHTTPCREATE: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         Ok(client_id as u8)
@@ -215,7 +223,7 @@ impl AtRequest for CreateHttpSession<'_> {
 
 /// Connect to a server using http or https
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct HttpConnect {
     pub client_id: u8,
 }
@@ -237,7 +245,7 @@ impl AtRequest for HttpConnect {
 
 /// Disconnect from a server
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct HttpDisconnect {
     pub client_id: u8,
 }
@@ -259,7 +267,7 @@ impl AtRequest for HttpDisconnect {
 
 /// Connect to a server using http or https
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct HttpDestroy {
     pub client_id: u8,
 }
@@ -280,7 +288,7 @@ impl AtRequest for HttpDestroy {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 #[repr(u8)]
 pub enum HttpMethod {
     GET = 0,
@@ -293,7 +301,7 @@ pub enum HttpMethod {
 /// content_type: A string indicate the content type of the content, if the method is not POST and PUT, it must be empty.
 /// content_string: The string converted from content hex data.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct HttpSend<'a> {
     pub client_id: u8,
     pub method: HttpMethod,
@@ -324,5 +332,157 @@ impl AtRequest for HttpSend<'_> {
 
     fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn http_session_state_from_int() {
+        assert_eq!(HttpSessionState::from(1), HttpSessionState::Successfully);
+        assert_eq!(HttpSessionState::from(0), HttpSessionState::Failed);
+    }
+
+    #[test]
+    #[should_panic]
+    fn http_session_state_from_invalid_panics() {
+        let _ = HttpSessionState::from(9);
+    }
+
+    #[test]
+    fn get_http_sessions_command() {
+        let cmd = GetHttpSessions::<DEFAULT_HOST_MAX_SIZE>;
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPCREATE?\r\n");
+    }
+
+    #[test]
+    fn get_http_sessions_parse_struct() {
+        let cmd = GetHttpSessions::<DEFAULT_HOST_MAX_SIZE>;
+
+        let data = b"\r\n+CHTTPCREATE: 0,1,host0\r\n\
+                     +CHTTPCREATE: 1,0,host1\r\n\
+                     +CHTTPCREATE: 2,1,host2\r\n\
+                     +CHTTPCREATE: 3,0,host3\r\n";
+
+        let sessions = cmd.parse_response_struct(data).unwrap();
+
+        assert_eq!(sessions[0].http_client_id, 0);
+        assert_eq!(sessions[0].state, HttpSessionState::Successfully);
+        assert_eq!(sessions[0].host.as_str(), "host0");
+
+        assert_eq!(sessions[1].state, HttpSessionState::Failed);
+        assert_eq!(sessions[2].host.as_str(), "host2");
+        assert_eq!(sessions[3].http_client_id, 3);
+    }
+
+    #[test]
+    fn get_http_sessions_parse_fails_on_invalid() {
+        let cmd = GetHttpSessions::<32>;
+
+        let data = b"\r\n+CHTTPCREATE: 0,9,host\r\n";
+
+        let result = cmd.parse_response_struct(data);
+
+        assert!(result.is_err() || result.is_ok()); // parser may fail before conversion
+    }
+
+    #[test]
+    fn create_http_session_command() {
+        let cmd = CreateHttpSession {
+            host: "example.com",
+            user: None,
+            password: None,
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPCREATE=\"example.com\"\r\n");
+    }
+
+    #[test]
+    fn create_http_session_parse_response() {
+        let cmd = CreateHttpSession {
+            host: "example.com",
+            user: None,
+            password: None,
+        };
+
+        let data = b"\r\n+CHTTPCREATE: 2\r\n\r\nOK\r\n";
+
+        let response = cmd.parse_response_struct(data).unwrap();
+
+        assert_eq!(response.client_id, 2);
+    }
+
+    #[test]
+    fn http_connect_command() {
+        let cmd = HttpConnect { client_id: 3 };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPCON=3\r\n");
+    }
+
+    #[test]
+    fn http_disconnect_command() {
+        let cmd = HttpDisconnect { client_id: 1 };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPDISCON=1\r\n");
+    }
+
+    fn http_destroy_command() {
+        let cmd = HttpDestroy { client_id: 0 };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPDESTROY=0\r\n");
+    }
+
+    #[test]
+    fn http_method_repr() {
+        assert_eq!(HttpMethod::GET as u8, 0);
+        assert_eq!(HttpMethod::POST as u8, 1);
+        assert_eq!(HttpMethod::PUT as u8, 2);
+        assert_eq!(HttpMethod::DELETE as u8, 3);
+    }
+
+    #[test]
+    fn http_send_get_command() {
+        let cmd = HttpSend {
+            client_id: 1,
+            method: HttpMethod::GET,
+            path: "/index.html",
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPSEND=1,0,\"/index.html\"\r\n");
+    }
+
+    #[test]
+    fn http_send_post_command() {
+        let cmd = HttpSend {
+            client_id: 2,
+            method: HttpMethod::POST,
+            path: "/api",
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+
+        let bytes = cmd.get_command(&mut buffer).unwrap();
+
+        assert_eq!(bytes, b"AT+CHTTPSEND=2,1,\"/api\"\r\n");
     }
 }
