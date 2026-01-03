@@ -1,8 +1,8 @@
 //! This module contains the resources to handle the PDP context parameters
 
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg(feature = "defmt")]

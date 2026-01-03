@@ -1,6 +1,6 @@
 //! Module for the product information
 
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::AtRequest;
 
 /// Request for the module information
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -12,7 +12,7 @@ const PRODUCT_INFORMATION_MAX_SIZE: usize = 64;
 
 /// Struct containing the product information
 pub struct ProductInformation {
-    name: heapless::String<PRODUCT_INFORMATION_MAX_SIZE>,
+    pub name: heapless::String<PRODUCT_INFORMATION_MAX_SIZE>,
 }
 
 impl AtRequest for AtI {

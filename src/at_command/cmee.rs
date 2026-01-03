@@ -2,7 +2,7 @@
 
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{verify_ok, AtRequest, BufferType};
+use crate::at_command::{verify_ok, AtRequest};
 use crate::AtError;
 
 #[cfg(feature = "defmt")]

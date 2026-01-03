@@ -1,6 +1,6 @@
 //! Contains the source code that allows controlling AT commands for CSCLK
 
-use crate::at_command::{verify_ok, AtRequest, BufferType};
+use crate::at_command::{verify_ok, AtRequest};
 use crate::AtError;
 
 /// The modes CSLK can be controlled

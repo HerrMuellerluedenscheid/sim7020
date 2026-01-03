@@ -123,7 +123,7 @@ mod test {
     use crate::{AtError, Modem};
     use embedded_hal_mock::eh1::delay::NoopDelay;
     use embedded_hal_mock::eh1::digital::{State as PinState, Transaction as PinTransaction};
-    use embedded_io::{ErrorType, Read, ReadReady, Write, WriteReady};
+    use embedded_io::{ErrorType, Read, ReadReady, Write};
     use mockall::{mock, predicate};
     use std::sync::Arc;
 

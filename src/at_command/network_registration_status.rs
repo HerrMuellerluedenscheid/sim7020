@@ -1,7 +1,7 @@
 //! Module for the operations related to the network registration
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 /// The status of unsolicited messages

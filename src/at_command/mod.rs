@@ -46,8 +46,6 @@ pub mod sleep_indication;
 pub mod socket;
 pub mod wireless;
 
-type BufferType = [u8; BUFFER_SIZE];
-
 // We have to do this workaround because the derive causes deprecation warnings.
 // The workaround allows deprecations in the deprecated module and then we
 mod deprecated {

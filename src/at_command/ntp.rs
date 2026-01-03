@@ -1,5 +1,5 @@
 /// Commands for the NTP protocol
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::AtRequest;
 use crate::AtError;
 
 /// Starts a NTP query

@@ -1,7 +1,7 @@
 //! Module to handle the Extended Report functionality
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg(feature = "defmt")]
@@ -52,8 +52,6 @@ mod test {
     fn test_extended_report_response() {
         let mut buffer = [0u8; 512];
 
-        ExtendedErrorReport
-            .parse_response_struct(&mut buffer)
-            .unwrap();
+        ExtendedErrorReport.parse_response_struct(&buffer).unwrap();
     }
 }

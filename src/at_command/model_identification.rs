@@ -1,7 +1,7 @@
 //! Module to get the model identification information
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 #[cfg(feature = "defmt")]
 use defmt::error;

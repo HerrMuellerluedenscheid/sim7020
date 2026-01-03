@@ -1,5 +1,5 @@
 //! Module to handle the wireless commands
-use crate::at_command::{AtRequest, BufferType};
+use crate::at_command::AtRequest;
 
 /// Command to start the wireless connection
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]

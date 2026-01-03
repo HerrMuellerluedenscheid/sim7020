@@ -1,8 +1,8 @@
 //! Model to handle the MQTT request
 use crate::at_command::mqtt::MQTTSessionWrapper::Disconnected;
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
@@ -831,7 +831,7 @@ mod test {
             data_format: MQTTDataFormat::Bytes,
         };
         let mut buffer: [u8; 512] = [0; 512];
-        let cmd = raw.get_command(&mut buffer).unwrap();
+        let _cmd = raw.get_command(&mut buffer).unwrap();
     }
 
     #[test]

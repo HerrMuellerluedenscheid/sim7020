@@ -1,7 +1,7 @@
 //! Commands to check the PDP context
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 use at_commands::parser::CommandParser;
 #[cfg(feature = "defmt")]
