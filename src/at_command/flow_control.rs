@@ -8,6 +8,7 @@ use at_commands::parser::CommandParser;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum ControlFlowStatus {
     No,
     Software,
@@ -15,6 +16,7 @@ pub enum ControlFlowStatus {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SetFlowControl {
     pub(crate) ta_to_te: ControlFlowStatus,
     pub(crate) te_to_ta: ControlFlowStatus,
@@ -69,9 +71,12 @@ impl AtRequest for SetFlowControl {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GetFlowControl;
 
 #[allow(unused)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct GetFlowControlResponse {
     pub dce_by_dte: ControlFlowStatus,
     pub dte_by_dce: ControlFlowStatus,

@@ -10,6 +10,7 @@ use defmt::warn;
 
 /// Struct to request the PDP context parameters
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct PDPContextReadDynamicsParameters;
 
 /// The max size allowed by the APN

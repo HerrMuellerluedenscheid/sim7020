@@ -7,7 +7,8 @@ use crate::{
 
 /// Domain for the socket connection
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Domain {
     IPv4 = 1,
     IPv6 = 2,
@@ -15,7 +16,8 @@ pub enum Domain {
 
 /// Indicates the type of connection for the socket
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Type {
     TCP = 1,
     UPD = 2,
@@ -24,7 +26,8 @@ pub enum Type {
 
 /// Indicates the underlaying protocol using for the socket
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone, Copy)]
 pub enum Protocol {
     IP = 1,
     ICMP = 2,
@@ -32,6 +35,8 @@ pub enum Protocol {
 }
 
 /// AT command to create a socket
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct CreateSocket {
     /// Type of IP connection that will be used
     pub domain: Domain,
@@ -43,6 +48,8 @@ pub struct CreateSocket {
     pub cid: Option<i32>,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq)]
 pub struct SocketCreated {
     pub socket_id: u8,
 }
@@ -91,6 +98,8 @@ impl AtRequest for CreateSocket {
 }
 
 /// Command to connect the socket to a remote address
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct ConnectSocketToRemote<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
@@ -127,6 +136,8 @@ impl AtRequest for ConnectSocketToRemote<'_> {
 }
 
 /// Struct used to send data through the socket
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq)]
 pub struct SendSocketMessage<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
@@ -199,6 +210,8 @@ impl AtRequest for SendSocketString<'_> {
 }
 
 /// Closes the opened TCP socket
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct CloseSocket {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,

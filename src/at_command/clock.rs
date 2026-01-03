@@ -5,7 +5,8 @@ use crate::AtError;
 use chrono::NaiveDateTime;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Clock {}
+#[derive(PartialEq, Clone)]
+pub struct Clock;
 
 impl Clock {
     fn parse_clock_response(data: &[u8]) -> Result<NaiveDateTime, AtError> {

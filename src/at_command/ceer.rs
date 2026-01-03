@@ -7,6 +7,7 @@ use crate::AtError;
 use defmt::info;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct ExtendedErrorReport;
 
 impl AtRequest for ExtendedErrorReport {

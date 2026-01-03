@@ -6,6 +6,7 @@ use crate::AtError;
 const CSTT_SIZE_MAX: usize = 32; // AT Datasheet page 172
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 /// Command to get the current APN configuration
 pub struct GetAPNUserPassword;
 

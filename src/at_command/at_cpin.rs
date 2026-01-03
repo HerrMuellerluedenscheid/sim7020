@@ -4,12 +4,13 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 /// Test if a pin is required.
 pub struct PINRequired;
 
 /// Indicates the response of [PinRequired]
-#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone, Debug)]
 pub enum PinStatus {
     Ready,
     SimPin,
@@ -114,6 +115,7 @@ impl AtRequest for PINRequired {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 /// Enter PIN.
 pub struct EnterPIN {
     pub pin: u16,

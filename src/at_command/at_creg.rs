@@ -7,8 +7,11 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkRegistration;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkRegistrationResponse {
     pub unsolicited_result: UnsolicitedResultCodes,
     pub status: NetworkRegistrationStatus,
@@ -60,6 +63,7 @@ impl AtRequest for NetworkRegistration {
 
 // provokes an error for testing purposes
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct AtCregError;
 
 impl AtRequest for AtCregError {

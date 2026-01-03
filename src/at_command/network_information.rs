@@ -5,6 +5,7 @@ use crate::AtError;
 use at_commands::parser::CommandParser;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum NetworkFormat {
     LongAlphanumeric,
     ShortAlphanumeric,
@@ -24,7 +25,7 @@ impl From<i32> for NetworkFormat {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Clone)]
 pub enum NetworkMode {
     Automatic,
     Manual,
@@ -44,12 +45,16 @@ impl From<i32> for NetworkMode {
 /// the network. Any of the formats may be unavailable and should then be an
 /// empty field. The list of operators shall be in order: home network,
 /// networks referenced in SIM, and other networks.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkInformation;
 
 const OPERATOR_MAX_SIZE: usize = 16;
 
 pub type NetworkOperator = heapless::String<OPERATOR_MAX_SIZE>;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct NetworkInformationState {
     pub mode: NetworkMode,
     pub format: NetworkFormat,

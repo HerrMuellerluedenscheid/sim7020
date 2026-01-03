@@ -9,6 +9,7 @@ use at_commands::parser::CommandParser;
 /// Current status of the battery
 #[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct BatteryChargeStatus {
     /// Capacity of the battery in percent
     capacity_percent: i32,
@@ -18,6 +19,7 @@ pub struct BatteryChargeStatus {
 
 /// Command to get the battery information
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct BatteryCharge;
 
 impl BatteryCharge {

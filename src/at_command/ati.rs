@@ -1,9 +1,10 @@
 use crate::at_command::{AtRequest, BufferType};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct AtI;
 
-pub struct ProductInformation {}
+pub struct ProductInformation;
 
 impl AtRequest for AtI {
     type Response = ProductInformation;

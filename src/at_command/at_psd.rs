@@ -2,6 +2,8 @@
 use crate::at_command::AtRequest;
 
 /// The types of PDP that can be configured
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub enum PdpType {
     IP,
     IPV6,
@@ -21,6 +23,8 @@ impl PdpType {
 }
 
 /// Struct that can be used to set the PSD settings
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct SetPSDSettings<'a> {
     /// Type of PDP to be used
     pub pdp_type: PdpType,

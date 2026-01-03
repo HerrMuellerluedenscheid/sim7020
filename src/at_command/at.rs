@@ -6,8 +6,8 @@ use crate::AtError;
 use defmt::{error, info};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Clone, Copy)]
-pub struct At {}
+#[derive(PartialEq, Clone)]
+pub struct At;
 
 impl At {
     fn get_command_response(data: &[u8]) -> Result<(&str, &str), AtError> {

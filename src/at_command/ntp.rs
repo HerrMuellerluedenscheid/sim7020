@@ -2,6 +2,7 @@ use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct StartQueryNTP<'a> {
     pub url: &'a str,
     pub tzinfo: Option<&'a str>, // currently not implemented
@@ -30,6 +31,7 @@ impl AtRequest for StartQueryNTP<'_> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq, Clone)]
 pub struct StopQueryNTP;
 
 impl AtRequest for StopQueryNTP {
