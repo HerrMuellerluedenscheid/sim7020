@@ -1,10 +1,14 @@
+//! Module to handle the SIM pin commands
+
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{AtRequest, BufferType};
 use crate::AtError;
 
+/// Command to check the current SIM status
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
+
 /// Test if a pin is required.
 pub struct PINRequired;
 
@@ -104,7 +108,7 @@ impl AtRequest for PINRequired {
     }
 
     #[allow(deprecated)]
-    fn parse_response(&self, data: &[u8]) -> Result<super::AtResponse, AtError> {
+    fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         let pin_status = Self::get_pin_response(data)?;
         Ok(AtResponse::PinStatus(pin_status))
     }
@@ -143,7 +147,6 @@ mod test {
     mod deprecated {
         #![allow(deprecated)]
         use super::*;
-
 
         #[test]
         fn test_parse_pin_ready() -> Result<(), AtError> {
