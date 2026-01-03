@@ -60,7 +60,8 @@ impl AtRequest for PDPContextReadDynamicsParameters {
     #[allow(deprecated)]
     fn parse_response(&self, data: &[u8]) -> Result<AtResponse, AtError> {
         if at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\nOK\r")
+            .trim_whitespace()
+            .expect_identifier(b"OK\r")
             .finish()
             .is_ok()
         {
@@ -70,12 +71,14 @@ impl AtRequest for PDPContextReadDynamicsParameters {
         }
 
         let (cid, bearer_id, apn, local_address) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CGCONTRDP: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CGCONTRDP: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_string_parameter()
             .expect_string_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
         Ok(AtResponse::PDPContextDynamicParameters(
             cid as u8,

@@ -786,7 +786,6 @@ mod test {
 
     #[test]
     fn get_mqtt_session_parse_response_struct() {
-        const MAX_SERVER_LEN: usize = 32;
         let data = b"+CMQNEW: 1,0,\"mqtt.example.com\"\r\nOK";
 
         let response = GetMQTTSession::parse_response_struct(&GetMQTTSession, data).unwrap();

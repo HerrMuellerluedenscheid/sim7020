@@ -14,9 +14,11 @@ pub struct Clock;
 impl Clock {
     fn parse_clock_response(data: &[u8]) -> Result<NaiveDateTime, AtError> {
         let (parsed,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CCLK: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CCLK: ")
             .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
         // 00/01/01,00:07:50+32  // +32 means east according to datasheet. Need to understand how to interpret
         // these zone infos

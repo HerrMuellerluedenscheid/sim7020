@@ -77,10 +77,12 @@ impl NetworkRegistration {
         data: &[u8],
     ) -> Result<(UnsolicitedResultCodes, NetworkRegistrationStatus), AtError> {
         let (n, stat) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CGREG: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CGREG: ")
             .expect_int_parameter()
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
         let unsolicited = UnsolicitedResultCodes::from(n);
         let status = NetworkRegistrationStatus::from(stat);

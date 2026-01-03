@@ -441,6 +441,7 @@ mod test {
         assert_eq!(bytes, b"AT+CHTTPDISCON=1\r\n");
     }
 
+    #[test]
     fn http_destroy_command() {
         let cmd = HttpDestroy { client_id: 0 };
         let mut buffer: [u8; 512] = [0; 512];

@@ -16,9 +16,11 @@ pub struct ReportMobileEquipmentError;
 impl ReportMobileEquipmentError {
     fn get_setting(data: &[u8]) -> Result<i32, AtError> {
         let (setting,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CMEE: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CMEE: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK\r\n")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         Ok(setting)

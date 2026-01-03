@@ -13,7 +13,7 @@ use crate::at_command::network_registration_status::{
 use crate::at_command::pdp_context::PDPState;
 use crate::at_command::power_saving_mode::PowerSavingModeState;
 use crate::at_command::sleep_indication::SleepIndication;
-use crate::{AtError, BUFFER_SIZE};
+use crate::AtError;
 #[cfg(feature = "defmt")]
 use defmt::debug;
 

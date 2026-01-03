@@ -50,7 +50,7 @@ mod test {
 
     #[test]
     fn test_extended_report_response() {
-        let mut buffer = [0u8; 512];
+        let buffer = [0u8; 512];
 
         ExtendedErrorReport.parse_response_struct(&buffer).unwrap();
     }

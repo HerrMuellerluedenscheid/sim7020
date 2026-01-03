@@ -69,12 +69,14 @@ pub struct NetworkInformationState {
 impl NetworkInformation {
     fn get_network_info(data: &[u8]) -> Result<NetworkInformationState, AtError> {
         let (mode, format, operator, _access_technology) = CommandParser::parse(data)
-            .expect_identifier(b"\r\n+COPS: ")
+            .trim_whitespace()
+            .expect_identifier(b"+COPS: ")
             .expect_int_parameter()
             .expect_optional_int_parameter()
             .expect_optional_string_parameter()
             .expect_optional_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         let mode = NetworkMode::from(mode);

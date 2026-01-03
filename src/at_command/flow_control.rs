@@ -91,8 +91,10 @@ pub struct GetFlowControlResponse {
 impl GetFlowControl {
     fn parse_data(data: &[u8]) -> Result<(ControlFlowStatus, ControlFlowStatus), AtError> {
         let (dce_by_dte, dte_by_dce, _) = CommandParser::parse(data)
+            .trim_whitespace()
             .expect_optional_identifier(b"AT+IFC?\r")
-            .expect_identifier(b"\r\n+IFC: ")
+            .trim_whitespace()
+            .expect_identifier(b"+IFC: ")
             .expect_int_parameter()
             .expect_int_parameter()
             .expect_raw_string()
