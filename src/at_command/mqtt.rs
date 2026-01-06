@@ -1,7 +1,8 @@
+//! Model to handle the MQTT request
 use crate::at_command::mqtt::MQTTSessionWrapper::Disconnected;
+use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
-use crate::at_command::{AtRequest, BufferType};
 use crate::{AtError, Modem};
 use at_commands::builder::CommandBuilder;
 #[cfg(feature = "defmt")]
@@ -10,8 +11,10 @@ use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::OutputPin;
 use embedded_io::{Read, ReadReady, Write};
 
+/// Maximum server length
 const MAX_SERVER_LEN: usize = 50;
 
+/// MQTT errors
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub enum MQTTError {
@@ -20,6 +23,7 @@ pub enum MQTTError {
     Publish,
 }
 
+/// The mqtt session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct Mqtt<'a> {
@@ -28,6 +32,7 @@ pub struct Mqtt<'a> {
 }
 
 impl<'a> Mqtt<'a> {
+    /// Creates a new MQTT session
     pub fn new(session_settings: &'a MQTTSessionSettings<'a>) -> Self {
         let session_wrapper = Disconnected(MQTTSession::new());
         Self {
@@ -35,6 +40,7 @@ impl<'a> Mqtt<'a> {
             session_wrapper,
         }
     }
+    /// Creates the MQTT session
     pub fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -48,6 +54,7 @@ impl<'a> Mqtt<'a> {
         })
     }
 
+    /// Connects the MQTT session
     pub fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         connection_settings: MQTTConnectionSettings,
@@ -60,6 +67,7 @@ impl<'a> Mqtt<'a> {
         })
     }
 
+    /// Disconnects the MQTT session
     pub fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -85,6 +93,7 @@ impl<'a> Mqtt<'a> {
         }
     }
 
+    /// Publish on a MQTT session
     pub fn publish<T, U, P, D>(
         &self,
         message: &MQTTMessage,
@@ -100,6 +109,7 @@ impl<'a> Mqtt<'a> {
     }
 }
 
+/// Wrapper around the MQTT sessions with the possible states
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 enum MQTTSessionWrapper {
@@ -109,6 +119,7 @@ enum MQTTSessionWrapper {
 }
 
 impl MQTTSessionWrapper {
+    /// Create a new MQTT session
     fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -131,6 +142,7 @@ impl MQTTSessionWrapper {
         }
     }
 
+    /// Connects the MQTT session
     fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -156,6 +168,7 @@ impl MQTTSessionWrapper {
         }
     }
 
+    /// Publish on the MQTT session
     pub(crate) fn publish<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         &self,
         p0: &MQTTMessage,
@@ -172,22 +185,26 @@ impl MQTTSessionWrapper {
     }
 }
 
+/// MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct MQTTSession<S> {
     state: S,
 }
 
+/// Disconnected MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 struct StateDisconnected {}
 
+/// Connected MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 struct StateConnected {
     mqtt_id: u8,
 }
 
+/// Connected MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 struct StateConnectedGood {
@@ -207,6 +224,7 @@ impl MQTTSession<StateDisconnected> {
         }
     }
 
+    /// Creates a new MQTT session
     pub fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -222,6 +240,7 @@ impl MQTTSession<StateDisconnected> {
 }
 
 impl MQTTSession<StateConnected> {
+    /// Disconnects the MQTT session
     pub fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         &self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -234,6 +253,7 @@ impl MQTTSession<StateConnected> {
         })
     }
 
+    /// Connects the MQTT session
     pub fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -249,6 +269,7 @@ impl MQTTSession<StateConnected> {
 }
 
 impl MQTTSession<StateConnectedGood> {
+    /// Disconnects the MQTT session
     fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         &self,
         modem: &mut Modem<'_, T, U, P, D>,
@@ -261,6 +282,7 @@ impl MQTTSession<StateConnectedGood> {
         })
     }
 
+    /// Publish on the MQTT
     fn publish<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
         &self,
         message: &MQTTMessage,
@@ -280,6 +302,7 @@ impl MQTTSession<StateConnectedGood> {
     }
 }
 
+/// The MQTT connection states
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub enum MQTTConnection {
@@ -355,6 +378,7 @@ impl MQTTSessionSettings<'_> {
     }
 }
 
+/// The MQTT session id
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct MqttSessionId {
@@ -364,9 +388,11 @@ pub struct MqttSessionId {
 impl MQTTSessionSettings<'_> {
     fn get_session_id(data: &[u8]) -> Result<u8, AtError> {
         let (mqtt_id,) = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CMQNEW: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CMQNEW: ")
             .expect_int_parameter()
-            .expect_identifier(b"\r\n\r\nOK")
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         Ok(mqtt_id as u8)
@@ -376,7 +402,7 @@ impl MQTTSessionSettings<'_> {
 impl AtRequest for MQTTSessionSettings<'_> {
     type Response = MqttSessionId;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQNEW")
             .with_string_parameter(self.server)
@@ -399,8 +425,9 @@ impl AtRequest for MQTTSessionSettings<'_> {
     }
 }
 
+/// The used state
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum UsedState {
     NotUsed,
     Used,
@@ -416,10 +443,12 @@ impl From<i32> for UsedState {
     }
 }
 
+/// Command to get the MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
-pub struct GetMQTTSession {}
+pub struct GetMQTTSession;
 
+/// Response with the MQTT session information
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct GetMQTTSessionResponse {
@@ -431,11 +460,13 @@ pub struct GetMQTTSessionResponse {
 impl GetMQTTSession {
     fn get_data(data: &[u8]) -> Result<(i32, i32, &str), AtError> {
         let tuple = at_commands::parser::CommandParser::parse(data)
-            .expect_identifier(b"\r\n+CMQNEW: ")
+            .trim_whitespace()
+            .expect_identifier(b"+CMQNEW: ")
             .expect_int_parameter()
             .expect_int_parameter()
-            .expect_raw_string()
-            .expect_identifier(b"\r\n\r\nOK")
+            .expect_string_parameter()
+            .trim_whitespace()
+            .expect_identifier(b"OK")
             .finish()?;
 
         Ok(tuple)
@@ -445,7 +476,7 @@ impl GetMQTTSession {
 impl AtRequest for GetMQTTSession {
     type Response = GetMQTTSessionResponse;
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_query(buffer, true)
             .named("+CMQNEW")
             .finish()
@@ -476,6 +507,7 @@ impl AtRequest for GetMQTTSession {
     }
 }
 
+/// Request to close the MQTT session
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct CloseMQTTConnection {
@@ -485,7 +517,7 @@ pub struct CloseMQTTConnection {
 impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
             .with_int_parameter(self.mqtt_id)
@@ -497,6 +529,7 @@ impl AtRequest for CloseMQTTConnection {
     }
 }
 
+/// MQTT versions
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 #[repr(u8)]
@@ -505,6 +538,7 @@ pub enum MQTTVersion {
     MQTT311,
 }
 
+/// Options for MQTT will
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct WillOptions<'a> {
@@ -513,6 +547,7 @@ pub struct WillOptions<'a> {
     pub retained: bool,
 }
 
+/// Command to connect to MQTT with different options
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 struct MQTTConnectionSettingsWithID<'a> {
@@ -527,6 +562,7 @@ struct MQTTConnectionSettingsWithID<'a> {
     password: &'a str,
 }
 
+/// Command to connect to MQTT with different options
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct MQTTConnectionSettings<'a> {
@@ -558,7 +594,7 @@ impl<'a> MQTTConnectionSettings<'a> {
 impl AtRequest for MQTTConnectionSettingsWithID<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let version: u8 = match self.version {
             MQTTVersion::MQTT31 => 3,
             MQTTVersion::MQTT311 => 4,
@@ -581,6 +617,7 @@ impl AtRequest for MQTTConnectionSettingsWithID<'_> {
     }
 }
 
+/// MQTT format of the data
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub enum MQTTDataFormat {
@@ -588,6 +625,7 @@ pub enum MQTTDataFormat {
     Hex,
 }
 
+/// Request to set MQTT data format
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(PartialEq, Clone)]
 pub struct MQTTRawData {
@@ -597,15 +635,15 @@ pub struct MQTTRawData {
 impl AtRequest for MQTTRawData {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         let format = match self.data_format {
-            MQTTDataFormat::Bytes => "0",
-            MQTTDataFormat::Hex => "1",
+            MQTTDataFormat::Bytes => 0,
+            MQTTDataFormat::Hex => 1,
         };
 
         at_commands::builder::CommandBuilder::create_set(buffer, true)
             .named("+CREVHEX")
-            .with_string_parameter(format)
+            .with_int_parameter(format)
             .finish()
     }
 
@@ -644,7 +682,7 @@ pub struct MQTTPublish<'a> {
 impl AtRequest for MQTTPublish<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQPUB")
             .with_int_parameter(self.mqtt_id)
@@ -673,7 +711,7 @@ pub struct MQTTSubscribe<'a> {
 impl AtRequest for MQTTSubscribe<'_> {
     type Response = ();
 
-    fn get_command<'a>(&'a self, buffer: &'a mut BufferType) -> Result<&'a [u8], usize> {
+    fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         CommandBuilder::create_set(buffer, true)
             .named("+CMQSUB")
             .with_int_parameter(self.mqtt_id)
@@ -684,5 +722,157 @@ impl AtRequest for MQTTSubscribe<'_> {
 
     fn parse_response_struct(&self, _data: &[u8]) -> Result<Self::Response, AtError> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const TEST_SERVER: &str = "mqtt.example.com";
+
+    #[test]
+    fn mqtt_session_settings_new_defaults() {
+        let settings = MQTTSessionSettings::new(TEST_SERVER, 1883);
+
+        assert_eq!(settings.server, TEST_SERVER);
+        assert_eq!(settings.port, 1883);
+        assert_eq!(settings.timeout_ms, 5000);
+        assert_eq!(settings.buffer_size, 600);
+        assert!(settings.context_id.is_none());
+    }
+
+    #[test]
+    fn mqtt_session_settings_with_timeout_and_buffer() {
+        let settings = MQTTSessionSettings::new(TEST_SERVER, 1883)
+            .with_timeout_ms(10000)
+            .with_buffer_size(1024);
+
+        assert_eq!(settings.timeout_ms, 10000);
+        assert_eq!(settings.buffer_size, 1024);
+    }
+
+    #[test]
+    fn mqtt_session_settings_with_context() {
+        let settings = MQTTSessionSettings::new(TEST_SERVER, 1883).with_context_id(Some(1));
+
+        assert_eq!(settings.context_id, Some(1));
+    }
+
+    #[test]
+    fn mqtt_session_settings_get_command() {
+        let settings = MQTTSessionSettings::new(TEST_SERVER, 1883);
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = settings.get_command(&mut buffer).unwrap();
+
+        assert!(cmd.starts_with(b"AT+CMQNEW"));
+        assert!(cmd
+            .windows(TEST_SERVER.len())
+            .any(|w| w == TEST_SERVER.as_bytes()));
+    }
+
+    #[test]
+    fn mqtt_session_settings_parse_session_id_success() {
+        let data = b"+CMQNEW: 3\r\nOK";
+        let id = MQTTSessionSettings::get_session_id(data).unwrap();
+        assert_eq!(id, 3);
+    }
+
+    #[test]
+    fn mqtt_session_settings_parse_session_id_failure() {
+        let data = b"+CMQNEW: \r\nOK";
+        assert!(MQTTSessionSettings::get_session_id(data).is_err());
+    }
+
+    #[test]
+    fn get_mqtt_session_parse_response_struct() {
+        let data = b"+CMQNEW: 1,0,\"mqtt.example.com\"\r\nOK";
+
+        let response = GetMQTTSession::parse_response_struct(&GetMQTTSession, data).unwrap();
+
+        assert_eq!(response.mqtt_id, 1);
+        assert_eq!(response.used_state, UsedState::NotUsed);
+        assert_eq!(response.server.as_str(), "mqtt.example.com");
+    }
+
+    #[test]
+    fn close_mqtt_connection_get_command() {
+        let close = CloseMQTTConnection { mqtt_id: 5 };
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = close.get_command(&mut buffer).unwrap();
+
+        assert!(cmd.starts_with(b"AT+CMQDISCON=5"));
+    }
+
+    #[test]
+    fn mqtt_connection_settings_with_id_get_command() {
+        let base = MQTTConnectionSettings {
+            version: MQTTVersion::MQTT311,
+            client_id: "client",
+            keepalive_interval: 60,
+            clean_session: true,
+            will_flag: false,
+            username: "user",
+            password: "pass",
+        };
+        let settings = base.with_mqtt_id(2);
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = settings.get_command(&mut buffer).unwrap();
+
+        assert!(cmd.windows(b"+CMQCON".len()).any(|w| w == b"+CMQCON"));
+        assert!(cmd.windows(b"client".len()).any(|w| w == b"client"));
+        assert!(cmd.windows(b"user".len()).any(|w| w == b"user"));
+    }
+
+    #[test]
+    fn mqtt_raw_data_bytes() {
+        let raw = MQTTRawData {
+            data_format: MQTTDataFormat::Bytes,
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+        let _cmd = raw.get_command(&mut buffer).unwrap();
+    }
+
+    #[test]
+    fn mqtt_raw_data_hex() {
+        let raw = MQTTRawData {
+            data_format: MQTTDataFormat::Hex,
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = raw.get_command(&mut buffer).unwrap();
+        assert!(cmd
+            .windows(b"AT+CREVHEX=1".len())
+            .any(|w| w == b"AT+CREVHEX=1"));
+    }
+
+    #[test]
+    fn mqtt_publish_get_command() {
+        let msg = MQTTPublish {
+            mqtt_id: 1,
+            topic: "topic",
+            qos: 1,
+            retained: true,
+            dup: false,
+            message: b"hello",
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = msg.get_command(&mut buffer).unwrap();
+
+        assert!(cmd.windows(b"+CMQPUB".len()).any(|w| w == b"+CMQPUB"));
+        assert!(cmd.windows(b"topic".len()).any(|w| w == b"topic"));
+    }
+
+    #[test]
+    fn mqtt_subscribe_get_command() {
+        let sub = MQTTSubscribe {
+            mqtt_id: 1,
+            topic: "topic",
+            qos: 0,
+        };
+        let mut buffer: [u8; 512] = [0; 512];
+        let cmd = sub.get_command(&mut buffer).unwrap();
+
+        assert!(cmd.windows(b"+CMQSUB".len()).any(|w| w == b"+CMQSUB"));
+        assert!(cmd.windows(b"topic".len()).any(|w| w == b"topic"));
     }
 }
