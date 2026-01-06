@@ -2,36 +2,100 @@
 
 use core::marker::PhantomData;
 
-#[cfg(feature = "defmt")]
-use defmt::debug;
-use embedded_hal::delay::DelayNs;
-use embedded_hal::digital::OutputPin;
-use embedded_io::{Read, ReadReady, Write};
-
 use crate::at_command::socket::*;
 use crate::contexts::common_socket_context::{Connected, PendingConnection};
 use crate::{AtError, Modem};
+#[cfg(feature = "defmt")]
+use defmt::{debug, error, warn};
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::OutputPin;
+use embedded_io::{Read, ReadReady, Write};
+#[cfg(test)]
+use mockall::automock;
+
+/// Helper trait for sending and receiving data from
+#[cfg_attr(test, automock)]
+pub trait SocketContextReceiver {
+    /// Sends the given data and returns a [Result]
+    fn send_data<'a>(&mut self, send_socket_message: SendSocketMessage<'a>) -> Result<(), AtError>;
+
+    /// Sends the given data and returns a [Result]
+    fn send_string<'a>(&mut self, send_socket_string: SendSocketString<'a>) -> Result<(), AtError>;
+
+    /// Connects the socket and returns a [Result]
+    fn connect<'a>(
+        &mut self,
+        connect_socket_to_remote: ConnectSocketToRemote<'a>,
+    ) -> Result<(), AtError>;
+
+    /// Creates a new socket
+    fn create(&mut self, create_socket: CreateSocket) -> Result<u8, AtError>;
+
+    /// Closes the socket
+    fn close(&mut self, close_socket: CloseSocket) -> Result<(), AtError>;
+
+    // TODO: Add a receive data method
+}
+
+impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs> SocketContextReceiver
+    for Modem<'a, W, R, P, D>
+{
+    #[inline]
+    fn send_data(&mut self, send_socket_message: SendSocketMessage) -> Result<(), AtError> {
+        self.send_and_wait_response(&send_socket_message)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn send_string(&mut self, send_socket_string: SendSocketString) -> Result<(), AtError> {
+        self.send_and_wait_response(&send_socket_string)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn connect(&mut self, connect_socket_to_remote: ConnectSocketToRemote) -> Result<(), AtError> {
+        self.send_and_wait_response(&connect_socket_to_remote)?;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn create(&mut self, create_socket: CreateSocket) -> Result<u8, AtError> {
+        let socket_id = self.send_and_wait_response(&create_socket)?;
+
+        Ok(socket_id.socket_id)
+    }
+
+    #[inline]
+    fn close(&mut self, close_socket: CloseSocket) -> Result<(), AtError> {
+        self.send_and_wait_response(&close_socket)?;
+
+        Ok(())
+    }
+}
 
 /// Defines a socket context, which is associated with one socket id.
-/// The socket context will be attached to a [Modem] thorugh a lifecycle
-pub struct SocketContext<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S> {
+/// The socket context will be attached to a [Modem] through a lifecycle
+pub struct SocketContext<'a, T: SocketContextReceiver, S> {
     socket_id: u8,
-    modem: &'a mut Modem<'a, W, R, P, D>,
+    modem: &'a mut T,
     _state: PhantomData<S>,
 }
 
 /// Creates a new [SocketContext] using the given modem
-pub fn new_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
-    modem: &'a mut Modem<'a, W, R, P, D>,
+pub fn new_socket_context<T: SocketContextReceiver>(
+    modem: &mut T,
     domain: Domain,
     connection_type: Type,
     protocol: Protocol,
     cid: Option<i32>,
-) -> Result<SocketContext<'a, W, R, P, D, PendingConnection>, AtError> {
+) -> Result<SocketContext<'_, T, PendingConnection>, AtError> {
     #[cfg(feature = "defmt")]
     debug!("Creating a new HTTP Context");
 
-    let socket_id = modem.send_and_wait_response(&CreateSocket {
+    let socket_id = modem.create(CreateSocket {
         cid,
         domain,
         connection_type,
@@ -39,35 +103,33 @@ pub fn new_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: De
     })?;
 
     Ok(SocketContext {
-        socket_id: socket_id.socket_id,
+        socket_id,
         modem,
         _state: Default::default(),
     })
 }
 
-fn close_socket_context<W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S>(
-    context: SocketContext<W, R, P, D, S>,
+fn close_socket_context<T: SocketContextReceiver, S>(
+    context: SocketContext<T, S>,
 ) -> Result<(), AtError> {
-    context.modem.send_and_wait_response(&CloseSocket {
+    context.modem.close(CloseSocket {
         socket_id: context.socket_id,
     })?;
 
     Ok(())
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    SocketContext<'a, W, R, P, D, PendingConnection>
-{
+impl<'a, T: SocketContextReceiver> SocketContext<'a, T, PendingConnection> {
     /// Connects the socket session to the remote server
     pub fn connect_to_remote(
         self,
         port: u16,
-        address: &str,
-    ) -> Result<SocketContext<'a, W, R, P, D, Connected>, AtError> {
+        address: &'a str,
+    ) -> Result<SocketContext<'a, T, Connected>, AtError> {
         #[cfg(feature = "defmt")]
         debug!("Connecting socket to {}:{}", address, port);
 
-        self.modem.send_and_wait_response(&ConnectSocketToRemote {
+        self.modem.connect(ConnectSocketToRemote {
             port,
             socket_id: self.socket_id,
             remote_address: address,
@@ -88,12 +150,10 @@ impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
     }
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    SocketContext<'a, W, R, P, D, Connected>
-{
+impl<'a, T: SocketContextReceiver> SocketContext<'a, T, Connected> {
     /// Sends the given string to the remote connection
     pub fn send_string(&mut self, data: &str) -> Result<(), AtError> {
-        self.modem.send_and_wait_response(&SendSocketString {
+        self.modem.send_string(SendSocketString {
             data,
             socket_id: self.socket_id,
         })?;
@@ -103,7 +163,7 @@ impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
 
     /// Send the given data to the remote connection
     pub fn send_data(&mut self, data: &[u8]) -> Result<(), AtError> {
-        self.modem.send_and_wait_response(&SendSocketMessage {
+        self.modem.send_data(SendSocketMessage {
             data,
             socket_id: self.socket_id,
         })?;
@@ -118,152 +178,79 @@ impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
 
 #[cfg(test)]
 mod test {
-    use std::{cell::RefCell, sync::Mutex};
+    use super::*;
+    use crate::AtError;
 
-    use crate::{AtError, Modem};
-    use embedded_hal_mock::eh1::delay::NoopDelay;
-    use embedded_hal_mock::eh1::digital::{State as PinState, Transaction as PinTransaction};
-    use embedded_io::{ErrorType, Read, ReadReady, Write};
-    use mockall::{mock, predicate};
-    use std::sync::Arc;
-
-    mock! {
-        TestReader{}
-        impl ErrorType for TestReader {
-            type Error = embedded_io::ErrorKind;
-        }
-        impl Read for TestReader {
-            fn read(&mut self, buf: &mut [u8]) -> Result<usize, embedded_io::ErrorKind>;
-        }
-
-        impl ReadReady for TestReader {
-            fn read_ready(&mut self) -> Result<bool, embedded_io::ErrorKind> {
-                Ok(true)
-            }
-        }
-    }
-
-    mock! {
-        TestWriter{}
-
-        impl ErrorType for TestWriter {
-            type Error = embedded_io::ErrorKind;
-        }
-
-        impl Write for TestWriter {
-            fn write(&mut self, buf: &[u8]) -> Result<usize, embedded_io::ErrorKind>;
-            fn flush(&mut self) -> Result<(), embedded_io::ErrorKind>;
-        }
-
-    }
+    use mockall::{predicate, Sequence};
 
     #[test]
-    #[ignore = "Refactor will be made"]
     fn test_socket_context() -> Result<(), AtError> {
-        let mut mock_writer = MockTestWriter::new();
-        let mut mock_reader = MockTestReader::new();
+        let mut mock = MockSocketContextReceiver::new();
 
-        let echo_off = [65, 84, 69, 48, 13, 10];
-        let create = b"AT+CSOC=1,1,1,3\r\n";
-        let connect = b"AT+CSOCON=1,1111,\"127.0.0.1\"\r\n";
-        let send_string = b"AT+CSOSEND=1,0,\"HELLO TEST\"\r\n";
-        let close = b"AT+CSOCL=1\r\n";
+        let create = CreateSocket {
+            cid: None,
+            domain: Domain::IPv4,
+            connection_type: Type::TCP,
+            protocol: Protocol::IP,
+        };
+        let connect = ConnectSocketToRemote {
+            socket_id: 1,
+            port: 9999,
+            remote_address: "127.0.0.1",
+        };
+        let send_string = SendSocketString {
+            socket_id: 1,
+            data: "Hello world!",
+        };
 
-        mock_writer
-            .expect_write()
-            .with(predicate::eq(Vec::from(echo_off)))
-            .return_const(Ok(echo_off.len()));
+        let send_data = SendSocketMessage {
+            socket_id: 1,
+            data: b"Hello world!",
+        };
 
-        mock_writer
-            .expect_write()
-            .with(predicate::eq(Vec::from(create)))
-            .return_const(Ok(create.len()));
+        let mut seq = Sequence::new();
 
-        mock_writer
-            .expect_write()
-            .with(predicate::eq(Vec::from(connect)))
-            .return_const(Ok(connect.len()));
+        mock.expect_create()
+            .once()
+            .in_sequence(&mut seq)
+            .with(predicate::eq(create.clone()))
+            .return_const(Ok(1));
 
-        mock_writer
-            .expect_write()
-            .with(predicate::eq(Vec::from(send_string)))
-            .return_const(Ok(send_string.len()));
+        mock.expect_connect()
+            .once()
+            .in_sequence(&mut seq)
+            .withf(move |x| *x == connect)
+            .return_const(Ok(()));
 
-        mock_writer
-            .expect_write()
-            .with(predicate::eq(Vec::from(close)))
-            .return_const(Ok(close.len()));
+        mock.expect_send_data()
+            .once()
+            .in_sequence(&mut seq)
+            .withf(move |x| *x == send_data)
+            .return_const(Ok(()));
 
-        let create_response = b"+CSOC: 1\r\n\r\nOK\r\n";
-        let ok_response = b"\r\nOK\r\n";
+        mock.expect_send_string()
+            .once()
+            .in_sequence(&mut seq)
+            .withf(move |x| *x == send_string)
+            .return_const(Ok(()));
 
-        let once = Arc::new(Mutex::new(TimesMatcher::new(2)));
+        mock.expect_close()
+            .once()
+            .in_sequence(&mut seq)
+            .withf(|x| *x == CloseSocket { socket_id: 1 })
+            .return_const(Ok(()));
 
-        let cloned = once.clone();
+        let socket_context =
+            new_socket_context(&mut mock, Domain::IPv4, Type::TCP, Protocol::IP, None)?;
 
-        mock_reader
-            .expect_read()
-            .with(predicate::function(move |_| {
-                let data = cloned.lock().unwrap();
-                data.get()
-            }))
-            .returning(|mut a| {
-                a.write(create_response).expect("Failed writing");
-                Ok(create_response.len())
-            });
+        let mut socket_context = socket_context.connect_to_remote(9999, "127.0.0.1")?;
 
-        mock_reader.expect_read().times(3).returning(|mut a| {
-            a.write(ok_response).expect("Failed writing");
-            Ok(ok_response.len())
-        });
+        socket_context.send_data(b"Hello world!")?;
 
-        let power_pin_expectation = [PinTransaction::get(PinState::High)];
+        socket_context.send_string("Hello world!")?;
 
-        let dtr_pin_expectation = [PinTransaction::get(PinState::Low)];
-
-        let power_pin = embedded_hal_mock::eh1::digital::Mock::new(&power_pin_expectation);
-        let dtr_pin = embedded_hal_mock::eh1::digital::Mock::new(&dtr_pin_expectation);
-
-        let mut modem = Modem::new(
-            &mut mock_writer,
-            &mut mock_reader,
-            power_pin,
-            dtr_pin,
-            NoopDelay,
-        )
-        .unwrap();
-
-        let context = super::new_socket_context(
-            &mut modem,
-            crate::at_command::socket::Domain::IPv4,
-            crate::at_command::socket::Type::TCP,
-            crate::at_command::socket::Protocol::IP,
-            Some(3),
-        )?;
-
-        let mut connected_socket = context.connect_to_remote(1111, "127.0.0.1").unwrap();
-
-        connected_socket.send_string("HELLO TEST").unwrap();
-
-        connected_socket.close()?;
+        socket_context.close()?;
 
         Ok(())
-    }
-
-    struct TimesMatcher {
-        matched: RefCell<i64>,
-    }
-
-    impl TimesMatcher {
-        fn new(times: i64) -> Self {
-            Self {
-                matched: RefCell::new(times),
-            }
-        }
-
-        fn get(&self) -> bool {
-            let old = self.matched.replace_with(|&mut old| old - 1);
-            old > 0
-        }
     }
 }

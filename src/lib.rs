@@ -50,7 +50,7 @@ pub struct Modem<'a, T: Write, U: Read, P, D> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AtError {
     TooManyReturnedLines,
     ErrorReply(usize),

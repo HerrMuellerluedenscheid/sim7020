@@ -19,7 +19,8 @@ pub struct AsyncSocketContext<'a, W: Write, R: Read + ReadReady, P: OutputPin, D
     _state: PhantomData<S>,
 }
 
-pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
+
+pub async fn new_async_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
     modem: &'a mut AsyncModem<W, R, P, D>,
     domain: Domain,
     connection_type: Type,
