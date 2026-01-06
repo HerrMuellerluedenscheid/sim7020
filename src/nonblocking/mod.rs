@@ -10,6 +10,7 @@ use crate::{at_command, AtError, BUFFER_SIZE, ERROR_TERMINATOR, OK_TERMINATOR};
 use core::cell::RefCell;
 use embedded_io_async::{Read, Write};
 
+use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
 use crate::at_command::cmee::ReportMobileEquipmentErrorSetting;
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
@@ -20,6 +21,8 @@ use embedded_hal_async::delay::DelayNs;
 #[cfg(feature = "defmt")]
 use embedded_io::Error;
 use embedded_io::ReadReady;
+
+use core::debug_assert;
 
 /// Time that we will await to ensure the system has turned ON
 const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
@@ -322,6 +325,75 @@ impl<'a, T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs> AsyncModem<T, 
                     error!("no data: {:?}", e.kind());
                 }
             }
+        }
+    }
+
+    /// Default max unlock tries
+    const MAX_UNLOCK_TRIES: usize = 1;
+
+    /// Try to unlock the sim card. If the sim card is already unlocked nothing will happen.
+    /// If the sim card needs a PIN the provided [pin] will be used to unlock.
+    /// If the status of the SIM is nor unlocked nor required PIN an [AtError]::IllegalPinStatus
+    /// with the current [PinStatus] will be returned.
+    /// This method will return OK only if the SIM is ready to be used
+    ///
+    /// You can use [max_unlock_tries] to indicate how many times you want to try to unlock
+    /// the SIM. If None is passed them [MAX_UNLOCK_TRIES] will be used as max tries.
+    pub async fn try_to_unlock_sim(
+        &mut self,
+        pin: u16,
+        max_unlock_tries: Option<usize>,
+    ) -> Result<(), AtError> {
+        #[cfg(feature = "defmt")]
+        info!("Trying to unlock SIM");
+
+        let max_unlock_tries = max_unlock_tries.unwrap_or(Self::MAX_UNLOCK_TRIES);
+
+        debug_assert!(max_unlock_tries > 0, "We need at least one try to unlock");
+
+        // First we need to check for the PIN status
+        let current_pin_status = self.send_and_wait_response(PINRequired).await?;
+
+        #[cfg(feature = "defmt")]
+        debug!("current pin status: {}", current_pin_status);
+
+        let mut unlock_tries = 0;
+
+        loop {
+            // First we need to check the status of the pin
+            match current_pin_status {
+                PinStatus::Ready => {
+                    #[cfg(feature = "defmt")]
+                    info!("SIM is already unlocked returning");
+
+                    return Ok(());
+                }
+                PinStatus::SimPin => {
+                    #[cfg(feature = "defmt")]
+                    debug!("SIM pin is required")
+                }
+                _ => {
+                    // This is a state the method can not handle
+                    #[cfg(feature = "defmt")]
+                    warn!("SIM status can no be handled. {}", current_pin_status);
+                    return Err(AtError::IllegalPinStatus(current_pin_status));
+                }
+            }
+
+            // If we already do the maximum unlock tries return an error with the current
+            // status
+            if unlock_tries >= Self::MAX_UNLOCK_TRIES {
+                #[cfg(feature = "defmt")]
+                return Err(AtError::IllegalPinStatus(current_pin_status));
+            }
+
+            // We have at least 1 try to unlock the pin
+            #[cfg(feature = "defmt")]
+            debug!("Trying to unlock SIM with the provided pin");
+
+            self.send_and_wait_response(EnterPIN { pin }).await?;
+
+            unlock_tries += 1;
         }
     }
 }
