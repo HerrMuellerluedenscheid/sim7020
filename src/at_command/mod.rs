@@ -42,6 +42,7 @@ pub mod network_registration_status;
 pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
+pub mod receive;
 pub mod sleep_indication;
 pub mod socket;
 pub mod wireless;

@@ -22,11 +22,14 @@ log = "0.4.22"
 heapless = "0.9.2"
 embedded-hal = "1.0.0"
 embedded-hal-async = { version = "1.0.0", optional = true }
+embedded-nal = { version = "0.9.0", optional = true }
 
 [features]
 default = []
-nonblocking = ["embedded-io-async","embedded-hal-async"]
+nonblocking = ["embedded-io-async", "embedded-hal-async"]
 defmt = ["dep:defmt", "embedded-io/defmt", "heapless/defmt"]
+nal = ["dep:embedded-nal"]
+socket_context = []
 
 
 # cargo build/run

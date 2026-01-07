@@ -6,7 +6,9 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-pub mod contexts;
+#[cfg(feature = "nal")]
+pub mod nal;
+
 use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
