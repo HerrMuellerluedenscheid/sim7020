@@ -6,7 +6,7 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-#[cfg(feature = "nal")]
+#[cfg(any(feature = "nal", feature = "async-nal"))]
 pub mod nal;
 
 use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
