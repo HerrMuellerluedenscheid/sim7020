@@ -42,6 +42,8 @@ pub mod network_registration_status;
 pub mod ntp;
 pub mod pdp_context;
 pub mod power_saving_mode;
+#[cfg(feature = "experimental")]
+pub mod receive;
 pub mod sleep_indication;
 pub mod socket;
 pub mod wireless;
@@ -124,7 +126,6 @@ pub(crate) fn verify_ok(data: &[u8]) -> Result<(), AtError> {
 
 #[cfg(test)]
 mod test {
-
     use super::*;
 
     #[test]
