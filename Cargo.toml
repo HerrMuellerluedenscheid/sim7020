@@ -82,6 +82,6 @@ lto = 'fat'
 opt-level = 3
 
 [dev-dependencies]
-defmt-test = "0.3.2"
+defmt-test = "0.4.0"
 mockall = "0.14.0"
 embedded-hal-mock = { version = "0.11.1", features = ["eh1"] }
