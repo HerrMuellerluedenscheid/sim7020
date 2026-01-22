@@ -3,6 +3,9 @@
 //!
 //! To use this module the feature nonblocking must be enabled
 
+#[cfg(feature = "experimental")]
+pub mod shared_async_modem;
+
 use crate::at_command::AtRequest;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;

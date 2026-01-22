@@ -6,7 +6,9 @@ pub mod at_command;
 #[cfg(feature = "nonblocking")]
 pub mod nonblocking;
 
-pub mod contexts;
+#[cfg(any(feature = "nal", feature = "async-nal"))]
+pub mod nal;
+
 use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
@@ -50,7 +52,7 @@ pub struct Modem<'a, T: Write, U: Read, P, D> {
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AtError {
     TooManyReturnedLines,
     ErrorReply(usize),

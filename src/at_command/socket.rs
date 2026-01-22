@@ -9,6 +9,7 @@ use crate::{
 /// Domain for the socket connection
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(test, derive(Debug))]
 #[derive(PartialEq, Clone, Copy)]
 pub enum Domain {
     IPv4 = 1,
@@ -18,6 +19,7 @@ pub enum Domain {
 /// Indicates the type of connection for the socket
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(test, derive(Debug))]
 #[derive(PartialEq, Clone, Copy)]
 pub enum Type {
     TCP = 1,
@@ -28,6 +30,7 @@ pub enum Type {
 /// Indicates the underlaying protocol using for the socket
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(test, derive(Debug))]
 #[derive(PartialEq, Clone, Copy)]
 pub enum Protocol {
     IP = 1,
@@ -37,6 +40,7 @@ pub enum Protocol {
 
 /// AT command to create a socket
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(test, derive(Debug))]
 #[derive(PartialEq, Clone)]
 pub struct CreateSocket {
     /// Type of IP connection that will be used
@@ -102,6 +106,7 @@ impl AtRequest for CreateSocket {
 
 /// Command to connect the socket to a remote address
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(test, derive(Debug))]
 #[derive(PartialEq, Clone)]
 pub struct ConnectSocketToRemote<'a> {
     /// Socket ID obtained by using [CreateSocket]
@@ -178,6 +183,8 @@ impl AtRequest for SendSocketMessage<'_> {
 }
 
 /// Struct used to send data through the socket
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(PartialEq)]
 pub struct SendSocketString<'a> {
     /// Socket ID obtained by using [CreateSocket]
     pub socket_id: u8,
