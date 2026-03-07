@@ -14,20 +14,34 @@ use crate::{AtError, Modem};
 
 /// Defines a socket context, which is associated with one socket id.
 /// The socket context will be attached to a [Modem] thorugh a lifecycle
-pub struct SocketContext<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S> {
+pub struct SocketContext<
+    'a,
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+> {
     socket_id: u8,
-    modem: &'a mut Modem<'a, W, R, P, D>,
+    modem: &'a mut Modem<W, R, PowerPin, DtrPin, D>,
     _state: PhantomData<S>,
 }
 
 /// Creates a new [SocketContext] using the given modem
-pub fn new_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
-    modem: &'a mut Modem<'a, W, R, P, D>,
+pub fn new_socket_context<
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+>(
+    modem: &mut Modem<W, R, PowerPin, DtrPin, D>,
     domain: Domain,
     connection_type: Type,
     protocol: Protocol,
     cid: Option<i32>,
-) -> Result<SocketContext<'a, W, R, P, D, PendingConnection>, AtError> {
+) -> Result<SocketContext<'_, W, R, PowerPin, DtrPin, D, PendingConnection>, AtError> {
     #[cfg(feature = "defmt")]
     debug!("Creating a new HTTP Context");
 
@@ -45,8 +59,15 @@ pub fn new_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: De
     })
 }
 
-fn close_socket_context<W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S>(
-    context: SocketContext<W, R, P, D, S>,
+fn close_socket_context<
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+>(
+    context: SocketContext<W, R, PowerPin, DtrPin, D, S>,
 ) -> Result<(), AtError> {
     context.modem.send_and_wait_response(&CloseSocket {
         socket_id: context.socket_id,
@@ -55,15 +76,15 @@ fn close_socket_context<W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs,
     Ok(())
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    SocketContext<'a, W, R, P, D, PendingConnection>
+impl<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    SocketContext<'a, W, R, PowerPin, DtrPin, D, PendingConnection>
 {
     /// Connects the socket session to the remote server
     pub fn connect_to_remote(
         self,
         port: u16,
         address: &str,
-    ) -> Result<SocketContext<'a, W, R, P, D, Connected>, AtError> {
+    ) -> Result<SocketContext<'a, W, R, PowerPin, DtrPin, D, Connected>, AtError> {
         #[cfg(feature = "defmt")]
         debug!("Connecting socket to {}:{}", address, port);
 
@@ -88,8 +109,8 @@ impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
     }
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    SocketContext<'a, W, R, P, D, Connected>
+impl<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    SocketContext<'a, W, R, PowerPin, DtrPin, D, Connected>
 {
     /// Sends the given string to the remote connection
     pub fn send_string(&mut self, data: &str) -> Result<(), AtError> {
