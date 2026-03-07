@@ -13,19 +13,19 @@ use embedded_hal_async::delay::DelayNs;
 use embedded_io::ReadReady;
 use embedded_io_async::{Read, Write};
 
-pub struct AsyncSocketContext<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S> {
+pub struct AsyncSocketContext<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S> {
     socket_id: u8,
-    modem: &'a mut AsyncModem<W, R, P, D>,
+    modem: &'a mut AsyncModem<W, R, PowerPin, DtrPin, D>,
     _state: PhantomData<S>,
 }
 
-pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>(
-    modem: &'a mut AsyncModem<W, R, P, D>,
+pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
+    modem: &'a mut AsyncModem<W, R, PowerPin, DtrPin, D>,
     domain: Domain,
     connection_type: Type,
     protocol: Protocol,
     cid: Option<i32>,
-) -> Result<AsyncSocketContext<'a, W, R, P, D, PendingConnection>, AtError> {
+) -> Result<AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, PendingConnection>, AtError> {
     #[cfg(feature = "defmt")]
     debug!("Creating a new HTTP Context");
 
@@ -45,8 +45,8 @@ pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, P: Output
     })
 }
 
-async fn close_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs, S>(
-    context: AsyncSocketContext<'a, W, R, P, D, S>,
+async fn close_socket_context<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S>(
+    context: AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, S>,
 ) -> Result<(), AtError> {
     context
         .modem
@@ -58,15 +58,15 @@ async fn close_socket_context<'a, W: Write, R: Read + ReadReady, P: OutputPin, D
     Ok(())
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    AsyncSocketContext<'a, W, R, P, D, PendingConnection>
+impl<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, PendingConnection>
 {
     /// Connects the socket session to the remote server
     pub async fn connect_to_remote(
         self,
         port: u16,
         address: &str,
-    ) -> Result<AsyncSocketContext<'a, W, R, P, D, Connected>, AtError> {
+    ) -> Result<AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, Connected>, AtError> {
         #[cfg(feature = "defmt")]
         debug!("Connecting socket to {}:{}", address, port);
 
@@ -93,8 +93,8 @@ impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
     }
 }
 
-impl<'a, W: Write, R: Read + ReadReady, P: OutputPin, D: DelayNs>
-    AsyncSocketContext<'a, W, R, P, D, Connected>
+impl<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, Connected>
 {
     /// Sends the given string to the remote connection
     pub async fn send_string(&mut self, data: &str) -> Result<(), AtError> {

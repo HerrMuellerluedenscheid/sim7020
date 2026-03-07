@@ -41,9 +41,9 @@ impl<'a> Mqtt<'a> {
         }
     }
     /// Creates the MQTT session
-    pub fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn create_session<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<Self, MQTTError> {
         let session_wrapper = self
             .session_wrapper
@@ -55,10 +55,10 @@ impl<'a> Mqtt<'a> {
     }
 
     /// Connects the MQTT session
-    pub fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn connect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
         connection_settings: MQTTConnectionSettings,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<Self, MQTTError> {
         let session_wrapper = self.session_wrapper.connect(modem, connection_settings)?;
         Ok(Self {
@@ -68,9 +68,9 @@ impl<'a> Mqtt<'a> {
     }
 
     /// Disconnects the MQTT session
-    pub fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn disconnect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<Self, MQTTError> {
         match self.session_wrapper {
             Disconnected(_) => Err(MQTTError::Disconnected),
@@ -94,15 +94,15 @@ impl<'a> Mqtt<'a> {
     }
 
     /// Publish on a MQTT session
-    pub fn publish<T, U, P, D>(
+    pub fn publish<T, U, PowerPin, DtrPin, D>(
         &self,
         message: &MQTTMessage,
-        p1: &mut Modem<T, U, P, D>,
+        p1: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<(), MQTTError>
     where
         T: Write,
         U: Read + ReadReady,
-        P: OutputPin,
+        PowerPin: OutputPin, DtrPin: OutputPin,
         D: DelayNs,
     {
         self.session_wrapper.publish(message, p1)
@@ -120,9 +120,9 @@ enum MQTTSessionWrapper {
 
 impl MQTTSessionWrapper {
     /// Create a new MQTT session
-    fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    fn create_session<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
         session_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
@@ -143,9 +143,9 @@ impl MQTTSessionWrapper {
     }
 
     /// Connects the MQTT session
-    fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    fn connect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
         connection_settings: MQTTConnectionSettings,
     ) -> Result<MQTTSessionWrapper, MQTTError> {
         match self {
@@ -169,10 +169,10 @@ impl MQTTSessionWrapper {
     }
 
     /// Publish on the MQTT session
-    pub(crate) fn publish<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub(crate) fn publish<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         &self,
         p0: &MQTTMessage,
-        p1: &mut Modem<'_, T, U, P, D>,
+        p1: &mut Modem<T, U, PowerPin,DtrPin, D>,
     ) -> Result<(), MQTTError> {
         match self {
             Disconnected(_) => Err(MQTTError::Disconnected),
@@ -225,9 +225,9 @@ impl MQTTSession<StateDisconnected> {
     }
 
     /// Creates a new MQTT session
-    pub fn create_session<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn create_session<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
         session_settings: &MQTTSessionSettings,
     ) -> Result<MQTTSession<StateConnected>, AtError> {
         #[cfg(feature = "defmt")]
@@ -241,9 +241,9 @@ impl MQTTSession<StateDisconnected> {
 
 impl MQTTSession<StateConnected> {
     /// Disconnects the MQTT session
-    pub fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn disconnect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         &self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
         modem.send_and_wait_response(&CloseMQTTConnection {
             mqtt_id: self.state.mqtt_id,
@@ -254,9 +254,9 @@ impl MQTTSession<StateConnected> {
     }
 
     /// Connects the MQTT session
-    pub fn connect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn connect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
         connection_settings: MQTTConnectionSettings,
     ) -> Result<MQTTSession<StateConnectedGood>, AtError> {
         let mqtt_id = self.state.mqtt_id;
@@ -270,9 +270,9 @@ impl MQTTSession<StateConnected> {
 
 impl MQTTSession<StateConnectedGood> {
     /// Disconnects the MQTT session
-    fn disconnect<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    fn disconnect<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         &self,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<MQTTSession<StateDisconnected>, AtError> {
         modem.send_and_wait_response(&CloseMQTTConnection {
             mqtt_id: self.state.mqtt_id,
@@ -283,10 +283,10 @@ impl MQTTSession<StateConnectedGood> {
     }
 
     /// Publish on the MQTT
-    fn publish<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    fn publish<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         &self,
         message: &MQTTMessage,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<(), MQTTError> {
         modem
             .send_and_wait_response(&MQTTPublish {
@@ -311,10 +311,10 @@ pub enum MQTTConnection {
 }
 
 impl MQTTConnection {
-    pub fn publish<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs>(
+    pub fn publish<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
         &self,
         message: &MQTTMessage,
-        modem: &mut Modem<'_, T, U, P, D>,
+        modem: &mut Modem<T, U, PowerPin, DtrPin, D>,
     ) -> Result<(), MQTTError> {
         match self {
             MQTTConnection::Disconnected => Err(MQTTError::Disconnected),
@@ -518,7 +518,7 @@ impl AtRequest for CloseMQTTConnection {
     type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
-        at_commands::builder::CommandBuilder::create_set(buffer, true)
+        CommandBuilder::create_set(buffer, true)
             .named("+CMQDISCON")
             .with_int_parameter(self.mqtt_id)
             .finish()
@@ -641,7 +641,7 @@ impl AtRequest for MQTTRawData {
             MQTTDataFormat::Hex => 1,
         };
 
-        at_commands::builder::CommandBuilder::create_set(buffer, true)
+        CommandBuilder::create_set(buffer, true)
             .named("+CREVHEX")
             .with_int_parameter(format)
             .finish()

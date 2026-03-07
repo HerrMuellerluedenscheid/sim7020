@@ -36,13 +36,13 @@ const CR: u8 = 13; // r
 const OK_TERMINATOR: &[u8] = &[CR, LF, b'O', b'K', CR, LF];
 const ERROR_TERMINATOR: &[u8] = &[b'R', b'R', b'O', b'R', CR, LF];
 
-pub struct Modem<'a, T: Write, U: Read, P, D> {
-    pub writer: &'a mut T,
-    pub reader: &'a mut U,
+pub struct Modem<T: Write, U: Read, PowerPin: OutputPin, DtrPin: OutputPin, D> {
+    pub writer: T,
+    pub reader: U,
     /// The pin that controls the power of the module
-    pub power_pin: P,
+    pub power_pin: PowerPin,
     /// The dtr pin which is used in the PSM mode
-    pub dtr_pin: P,
+    pub dtr_pin: DtrPin,
     /// A delay implementation that will help controlling some await times
     pub delay: D,
     /// Current sleep mode that has been configured for the module
@@ -85,15 +85,15 @@ impl From<chrono::format::ParseError> for AtError {
     }
 }
 
-impl<'a, T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs> Modem<'a, T, U, P, D> {
+impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs> Modem<T, U, PowerPin, DtrPin, D> {
     /// Time that we will await to ensure the system has turned ON
     const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
 
     pub fn new(
-        writer: &'a mut T,
-        reader: &'a mut U,
-        power_pin: P,
-        dtr_pin: P,
+        writer: T,
+        reader: U,
+        power_pin: PowerPin,
+        dtr_pin: DtrPin,
         delay: D,
     ) -> Result<Self, AtError> {
         let mut modem = Self {

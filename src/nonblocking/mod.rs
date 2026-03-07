@@ -28,27 +28,35 @@ use core::debug_assert;
 const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
 
 /// Modem struct that will help controlling the SIM7020 module with async methods
-pub struct AsyncModem<T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs> {
+pub struct AsyncModem<
+    T: Write,
+    U: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+> {
     /// The writer where the AT Commands will be sent
     pub writer: T,
     /// The reader where the AT Commands will be received
     pub reader: U,
     /// The pin that controls the power of the module
-    pub power_pin: P,
+    pub power_pin: PowerPin,
     /// The dtr pin which is used in the PSM mode
-    pub dtr_pin: P,
+    pub dtr_pin: DtrPin,
     /// A delay implementation that will help controlling some await times
     pub delay: D,
     /// Current sleep mode that has been configured for the module
     sleep_mode: RefCell<CSCLKMode>,
 }
 
-impl<'a, T: Write, U: Read + ReadReady, P: OutputPin, D: DelayNs> AsyncModem<T, U, P, D> {
+impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    AsyncModem<T, U, PowerPin, DtrPin, D>
+{
     pub async fn new(
         writer: T,
         reader: U,
-        power_pin: P,
-        dtr_pin: P,
+        power_pin: PowerPin,
+        dtr_pin: DtrPin,
         delay: D,
     ) -> Result<Self, AtError> {
         let mut modem = Self {
