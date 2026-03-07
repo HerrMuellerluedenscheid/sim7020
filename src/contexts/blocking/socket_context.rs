@@ -14,20 +14,34 @@ use crate::{AtError, Modem};
 
 /// Defines a socket context, which is associated with one socket id.
 /// The socket context will be attached to a [Modem] thorugh a lifecycle
-pub struct SocketContext<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S> {
+pub struct SocketContext<
+    'a,
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+> {
     socket_id: u8,
     modem: &'a mut Modem<W, R, PowerPin, DtrPin, D>,
     _state: PhantomData<S>,
 }
 
 /// Creates a new [SocketContext] using the given modem
-pub fn new_socket_context<W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
+pub fn new_socket_context<
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+>(
     modem: &mut Modem<W, R, PowerPin, DtrPin, D>,
     domain: Domain,
     connection_type: Type,
     protocol: Protocol,
     cid: Option<i32>,
-) -> Result<SocketContext<'_,W, R, PowerPin, DtrPin, D, PendingConnection>, AtError> {
+) -> Result<SocketContext<'_, W, R, PowerPin, DtrPin, D, PendingConnection>, AtError> {
     #[cfg(feature = "defmt")]
     debug!("Creating a new HTTP Context");
 
@@ -45,7 +59,14 @@ pub fn new_socket_context<W: Write, R: Read + ReadReady, PowerPin: OutputPin, Dt
     })
 }
 
-fn close_socket_context<W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S>(
+fn close_socket_context<
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+>(
     context: SocketContext<W, R, PowerPin, DtrPin, D, S>,
 ) -> Result<(), AtError> {
     context.modem.send_and_wait_response(&CloseSocket {

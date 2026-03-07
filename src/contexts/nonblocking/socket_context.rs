@@ -13,13 +13,28 @@ use embedded_hal_async::delay::DelayNs;
 use embedded_io::ReadReady;
 use embedded_io_async::{Read, Write};
 
-pub struct AsyncSocketContext<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S> {
+pub struct AsyncSocketContext<
+    'a,
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+> {
     socket_id: u8,
     modem: &'a mut AsyncModem<W, R, PowerPin, DtrPin, D>,
     _state: PhantomData<S>,
 }
 
-pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>(
+pub async fn new_async_http_session<
+    'a,
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+>(
     modem: &'a mut AsyncModem<W, R, PowerPin, DtrPin, D>,
     domain: Domain,
     connection_type: Type,
@@ -45,7 +60,15 @@ pub async fn new_async_http_session<'a, W: Write, R: Read + ReadReady, PowerPin:
     })
 }
 
-async fn close_socket_context<'a, W: Write, R: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs, S>(
+async fn close_socket_context<
+    'a,
+    W: Write,
+    R: Read + ReadReady,
+    PowerPin: OutputPin,
+    DtrPin: OutputPin,
+    D: DelayNs,
+    S,
+>(
     context: AsyncSocketContext<'a, W, R, PowerPin, DtrPin, D, S>,
 ) -> Result<(), AtError> {
     context

@@ -85,7 +85,9 @@ impl From<chrono::format::ParseError> for AtError {
     }
 }
 
-impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs> Modem<T, U, PowerPin, DtrPin, D> {
+impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: DelayNs>
+    Modem<T, U, PowerPin, DtrPin, D>
+{
     /// Time that we will await to ensure the system has turned ON
     const AWAIT_TIME_FOR_POWER_UP: u32 = 1000 * 10;
 
