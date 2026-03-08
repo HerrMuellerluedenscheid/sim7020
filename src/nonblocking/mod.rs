@@ -359,10 +359,16 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
             // Check if there are no bytes left, we exhausted the buffer, or we have a break
             if read_bytes_in_iter == 0
                 || read_bytes >= response_out.len()
-                || response_out[read_bytes..read_bytes + 1] == [b'\r', b'\n']
+                || response_out[read_bytes - 1..read_bytes] == [b'\r', b'\n']
             {
                 return Ok(read_bytes);
             }
+
+            #[cfg(feature = "defmt")]
+            trace!(
+                "Read on unsolicited message {=[u8]:a} bytes",
+                response_out[..read_bytes]
+            );
         }
     }
 
