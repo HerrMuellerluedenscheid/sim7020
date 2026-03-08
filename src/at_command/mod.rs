@@ -18,6 +18,7 @@ use crate::AtError;
 use defmt::debug;
 
 pub mod at;
+pub mod at_cdnscfg;
 pub mod at_cdnsgip;
 pub mod at_cgatt;
 pub mod at_cpin;
