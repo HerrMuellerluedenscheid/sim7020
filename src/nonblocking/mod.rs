@@ -22,6 +22,7 @@ use embedded_hal_async::delay::DelayNs;
 use embedded_io::Error;
 use embedded_io::ReadReady;
 
+use crate::at_command::unsolicited_at_responses::AtUnsolicitedResponse;
 use core::debug_assert;
 
 /// Time that we will await to ensure the system has turned ON
@@ -250,6 +251,44 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
         #[cfg(feature = "defmt")]
         debug!("parsed response: {}", response);
         response
+    }
+
+    /// Try to read from the buffer an unsolicited message of type P.
+    /// If there is no message the Result will be an OK containing a None
+    /// If there is an Error the Result will be Error containing the corresponding error
+    pub async fn try_to_read_pending_message<P: AtUnsolicitedResponse>(
+        &mut self,
+    ) -> Result<Option<P>, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Trying to read a pending message");
+
+        if self.reader.read_ready().map_err(|_e| AtError::IOError)? {
+            #[cfg(feature = "defmt")]
+            info!("There are no pending messages to read on the buffer");
+
+            return Ok(None);
+        }
+
+        #[cfg(feature = "defmt")]
+        debug!("Trying to read a pending message");
+
+        let mut buffer = [0u8; BUFFER_SIZE];
+
+        let read_bytes = self
+            .reader
+            .read(&mut buffer)
+            .await
+            .map_err(|_e| AtError::IOError)?;
+
+        let read_buffer = &buffer[..read_bytes];
+
+        #[cfg(feature = "defmt")]
+        {
+            debug!("read {} bytes", read_bytes);
+            trace!("Read bytes: {=[u8]:a}", read_buffer);
+        }
+
+        P::parse_response_struct(read_buffer).map(|result| Some(result))
     }
 
     #[deprecated(since = "3.0.0", note = "Use the send_and_wait_response")]
