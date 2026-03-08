@@ -31,10 +31,11 @@ impl AtRequest for QueryCDNSCFG {
             .trim_whitespace()
             .expect_identifier(b"PrimaryDns:")
             .trim_whitespace()
-            .expect_string_parameter()
+            .expect_raw_string()
             .trim_whitespace()
             .expect_identifier(b"SecondaryDns:")
-            .expect_string_parameter()
+            .trim_whitespace()
+            .expect_raw_string()
             .trim_whitespace()
             .expect_identifier(b"OK")
             .trim_whitespace()
@@ -102,7 +103,7 @@ mod tests {
     fn test_query_cdnscfg_parse_valid() {
         let cmd = QueryCDNSCFG;
 
-        let data = b"PrimaryDns: \"8.8.8.8\" SecondaryDns: \"8.8.4.4\"\r\nOK";
+        let data = b"PrimaryDns: 8.8.8.8\r\nSecondaryDns: 8.8.4.4\r\nOK";
 
         let resp = cmd.parse_response_struct(data).unwrap();
 
@@ -130,6 +131,21 @@ mod tests {
         let result = cmd.parse_response_struct(data);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_with_real_response() {
+        let response = b"\r\nPrimaryDns: 208.67.222.222\r\nSecondaryDns: 0.0.0.0\r\n\r\nOK\r";
+
+        let cmd = QueryCDNSCFG;
+
+        let resp = cmd.parse_response_struct(response).unwrap();
+
+        assert_eq!(
+            resp.primary_dns,
+            IpAddr::from_str("208.67.222.222").unwrap()
+        );
+        assert_eq!(resp.secondary_dns, IpAddr::from_str("0.0.0.0").unwrap());
     }
 
     // -------------------------
