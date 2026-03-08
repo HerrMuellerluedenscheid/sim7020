@@ -73,7 +73,7 @@ impl AtRequest for ConfigureDns<'_> {
     }
 
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
-        verify_ok(&data)?;
+        verify_ok(data)?;
         Ok(())
     }
 }
