@@ -12,6 +12,7 @@ use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
+use crate::at_command::unsolicited_at_responses::at_cdnsip_response::DNSErrors;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{
@@ -28,7 +29,6 @@ use embedded_hal::digital::OutputPin;
 use embedded_io::Error;
 use embedded_io::ReadReady;
 pub use embedded_io::{Read, Write};
-use crate::at_command::unsolicited_at_responses::at_cdnsip_response::DNSErrors;
 
 const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
@@ -66,7 +66,7 @@ pub enum AtError {
     HALError,
     IllegalModuleState,
     IllegalPinStatus(PinStatus),
-    DNSError(DNSErrors)
+    DNSError(DNSErrors),
 }
 
 impl From<ParseError> for AtError {

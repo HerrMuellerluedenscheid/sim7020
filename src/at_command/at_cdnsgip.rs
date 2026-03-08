@@ -1,7 +1,7 @@
-#[cfg(feature = "defmt")]
-use defmt::debug;
 use crate::at_command::{verify_ok, AtRequest};
 use crate::AtError;
+#[cfg(feature = "defmt")]
+use defmt::debug;
 
 /// Implementation of the command AT+CDNSGIP which allows performing a DNS query
 /// The query response will arrive by an unsolicited message
@@ -34,7 +34,9 @@ mod tests {
 
     #[test]
     fn test_get_command_basic() {
-        let cmd = CDNSGIP { domain: "example.com" };
+        let cmd = CDNSGIP {
+            domain: "example.com",
+        };
         let mut buffer = [0u8; 64];
 
         let result = cmd.get_command(&mut buffer).unwrap();
@@ -45,7 +47,9 @@ mod tests {
 
     #[test]
     fn test_get_command_small_buffer() {
-        let cmd = CDNSGIP { domain: "example.com" };
+        let cmd = CDNSGIP {
+            domain: "example.com",
+        };
         let mut buffer = [0u8; 8];
 
         let result = cmd.get_command(&mut buffer);
@@ -55,7 +59,9 @@ mod tests {
 
     #[test]
     fn test_parse_response_ok() {
-        let cmd = CDNSGIP { domain: "example.com" };
+        let cmd = CDNSGIP {
+            domain: "example.com",
+        };
 
         let data = b"\r\nOK\r\n";
 
@@ -67,7 +73,9 @@ mod tests {
 
     #[test]
     fn test_parse_response_error() {
-        let cmd = CDNSGIP { domain: "example.com" };
+        let cmd = CDNSGIP {
+            domain: "example.com",
+        };
 
         let data = b"\r\nERROR\r\n";
 
@@ -78,7 +86,9 @@ mod tests {
 
     #[test]
     fn test_parse_response_with_extra_whitespace() {
-        let cmd = CDNSGIP { domain: "example.com" };
+        let cmd = CDNSGIP {
+            domain: "example.com",
+        };
 
         let data = b"\r\nOK\r\n\r\n";
 

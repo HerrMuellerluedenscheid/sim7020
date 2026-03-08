@@ -1,7 +1,7 @@
-use core::net::IpAddr;
-use at_commands::parser::CommandParser;
 use crate::at_command::unsolicited_at_responses::AtUnsolicitedResponse;
 use crate::AtError;
+use at_commands::parser::CommandParser;
+use core::net::IpAddr;
 
 /// Enum containing the DNSErrors
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -9,7 +9,7 @@ use crate::AtError;
 pub enum DNSErrors {
     DnsCommonError,
     NetworkError,
-    Unknown
+    Unknown,
 }
 ///Error code for common DNS errors
 const DNS_COMMON_ERROR: u8 = 8;
@@ -23,7 +23,7 @@ impl From<i32> for DNSErrors {
         match value {
             DNS_COMMON_ERROR => Self::DnsCommonError,
             DNS_NETWORK_ERROR => Self::NetworkError,
-            _ => Self::Unknown
+            _ => Self::Unknown,
         }
     }
 }
@@ -38,7 +38,6 @@ pub struct CDNSIPResponse<const N: usize = 64> {
     pub ip2: Option<IpAddr>,
 }
 
-
 impl<const N: usize> AtUnsolicitedResponse for CDNSIPResponse<N> {
     fn parse_response_struct(data: &[u8]) -> Result<Self, AtError> {
         let result = CommandParser::parse(data)
@@ -52,36 +51,35 @@ impl<const N: usize> AtUnsolicitedResponse for CDNSIPResponse<N> {
             .finish();
 
         if let Ok((domain, ip1, ip2)) = result {
-            let domain : heapless::String<N> = domain.try_into()?;
+            let domain: heapless::String<N> = domain.try_into()?;
             let ip1: IpAddr = ip1.parse().map_err(|_| AtError::AtParseError)?;
-            let ip2: Option<IpAddr> = ip2.map(|addr| addr.parse()).transpose().map_err(|_| AtError::AtParseError)?;
+            let ip2: Option<IpAddr> = ip2
+                .map(|addr| addr.parse())
+                .transpose()
+                .map_err(|_| AtError::AtParseError)?;
 
-            Ok(Self {
-                domain,
-                ip1,
-                ip2
-            })
+            Ok(Self { domain, ip1, ip2 })
         } else {
             let (dns_error_code,) = CommandParser::parse(data)
                 .trim_whitespace()
                 // Check we have the 1 indicating the OK
                 .expect_identifier(b"+CDNSGIP: 0,")
                 .trim_whitespace()
-                .expect_int_parameter().finish()?;
+                .expect_int_parameter()
+                .finish()?;
 
             let dns_error_code = dns_error_code.into();
 
             Err(AtError::DNSError(dns_error_code))
         }
-
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::str::FromStr;
     use core::net::IpAddr;
+    use core::str::FromStr;
 
     #[test]
     fn test_dns_error_from_common() {
@@ -121,10 +119,7 @@ mod tests {
 
         assert_eq!(result.domain.as_str(), "example.com");
         assert_eq!(result.ip1, IpAddr::from_str("127.0.0.1").unwrap());
-        assert_eq!(
-            result.ip2,
-            Some(IpAddr::from_str("127.0.0.1").unwrap())
-        );
+        assert_eq!(result.ip2, Some(IpAddr::from_str("127.0.0.1").unwrap()));
     }
 
     #[test]

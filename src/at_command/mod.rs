@@ -18,6 +18,7 @@ use crate::AtError;
 use defmt::debug;
 
 pub mod at;
+pub mod at_cdnsgip;
 pub mod at_cgatt;
 pub mod at_cpin;
 pub mod at_creg;
@@ -44,9 +45,8 @@ pub mod pdp_context;
 pub mod power_saving_mode;
 pub mod sleep_indication;
 pub mod socket;
-pub mod wireless;
-pub mod at_cdnsgip;
 pub mod unsolicited_at_responses;
+pub mod wireless;
 
 // We have to do this workaround because the derive causes deprecation warnings.
 // The workaround allows deprecations in the deprecated module and then we
