@@ -1,7 +1,6 @@
 use core::net::IpAddr;
-use at_commands::parser::CommandParser;
 use defmt::debug;
-use crate::at_command::AtRequest;
+use crate::at_command::{verify_ok, AtRequest};
 use crate::AtError;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -19,14 +18,17 @@ pub struct CDNSGIP<'a> {
     pub domain: &'a str,
 }
 
-pub struct CDNSIPResponse {
+/// Contains the information of a DNS query response.
+/// The size of the domain will default to 64 and can be configured
+pub struct CDNSIPResponse<const N: usize = 64> {
+    pub domain: heapless::String<N>,
     pub ip1: IpAddr,
     pub ip2: Option<IpAddr>,
 }
 
 
 impl AtRequest for CDNSGIP<'_> {
-    type Response = CDNSIPResponse;
+    type Response = ();
 
     fn get_command<'a>(&'a self, buffer: &'a mut [u8]) -> Result<&'a [u8], usize> {
         at_commands::builder::CommandBuilder::create_set(buffer, true)
@@ -38,6 +40,6 @@ impl AtRequest for CDNSGIP<'_> {
     fn parse_response_struct(&self, data: &[u8]) -> Result<Self::Response, AtError> {
         #[cfg(feature = "defmt")]
         debug!("The received data is: {:?}", data);
-        todo!()
+        verify_ok(data)
     }
 }
