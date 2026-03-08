@@ -274,17 +274,13 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
 
         let mut buffer = [0u8; BUFFER_SIZE];
 
-        let read_bytes = self
-            .reader
-            .read(&mut buffer)
-            .await
-            .map_err(|_e| AtError::IOError)?;
+        let unsolicited_message_size = self.read_unsolicited_response(&mut buffer).await?;
 
-        let read_buffer = &buffer[..read_bytes];
+        let read_buffer = &buffer[..unsolicited_message_size];
 
         #[cfg(feature = "defmt")]
         {
-            debug!("read {} bytes", read_bytes);
+            debug!("read {} bytes", unsolicited_message_size);
             trace!("Read bytes: {=[u8]:a}", read_buffer);
         }
 
@@ -335,6 +331,39 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
         #[cfg(feature = "defmt")]
         debug!("received response: {=[u8]:a}", buffer[..response_size]);
         Ok(())
+    }
+
+    async fn read_unsolicited_response(
+        &mut self,
+        response_out: &mut [u8],
+    ) -> Result<usize, AtError> {
+        let mut read_bytes = 0usize;
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Reading unsolicited message from index {}", read_bytes);
+
+            let read_bytes_in_iter = self
+                .reader
+                .read(&mut response_out[read_bytes..])
+                .await
+                .map_err(|_e| AtError::IOError)?;
+
+            read_bytes += read_bytes_in_iter;
+
+            #[cfg(feature = "defmt")]
+            debug!(
+                "Reading unsolicited message, read on iteration {}, total read {}",
+                read_bytes_in_iter, read_bytes
+            );
+
+            // Check if there are no bytes left, we exhausted the buffer, or we have a break
+            if read_bytes_in_iter == 0
+                || read_bytes >= response_out.len()
+                || response_out[read_bytes..read_bytes + 1] == [b'\r', b'\n']
+            {
+                return Ok(read_bytes);
+            }
+        }
     }
 
     async fn read_response(
