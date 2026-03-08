@@ -7,11 +7,14 @@ pub mod at_command;
 pub mod nonblocking;
 
 pub mod contexts;
+use crate::at_command::at_cdnsgip::CDNSGIP;
 use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
+use crate::at_command::unsolicited_at_responses::at_cdnsip_response::{CDNSIPResponse, DNSErrors};
+use crate::at_command::unsolicited_at_responses::AtUnsolicitedResponse;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
 use crate::at_command::{
@@ -65,6 +68,7 @@ pub enum AtError {
     HALError,
     IllegalModuleState,
     IllegalPinStatus(PinStatus),
+    DNSError(DNSErrors),
 }
 
 impl From<ParseError> for AtError {
@@ -266,6 +270,75 @@ impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: D
         Ok(())
     }
 
+    /// Try to read from the buffer an unsolicited message of type P.
+    /// If there is no message the Result will be an OK containing a None
+    /// If there is an Error the Result will be Error containing the corresponding error
+    pub fn try_to_read_pending_message<P: AtUnsolicitedResponse>(
+        &mut self,
+    ) -> Result<Option<P>, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Trying to read a pending message");
+
+        if self.reader.read_ready().map_err(|_e| AtError::IOError)? {
+            #[cfg(feature = "defmt")]
+            info!("There are no pending messages to read on the buffer");
+
+            return Ok(None);
+        }
+
+        #[cfg(feature = "defmt")]
+        debug!("Trying to read a pending message");
+
+        let mut buffer = [0u8; BUFFER_SIZE];
+
+        let unsolicited_message_size = self.read_unsolicited_response(&mut buffer)?;
+
+        let read_buffer = &buffer[..unsolicited_message_size];
+
+        #[cfg(feature = "defmt")]
+        {
+            debug!("read {} bytes", unsolicited_message_size);
+            trace!("Read bytes: {=[u8]:a}", read_buffer);
+        }
+
+        P::parse_response_struct(read_buffer).map(|result| Some(result))
+    }
+
+    fn read_unsolicited_response(&mut self, response_out: &mut [u8]) -> Result<usize, AtError> {
+        let mut read_bytes = 0usize;
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Reading unsolicited message from index {}", read_bytes);
+
+            let read_bytes_in_iter = self
+                .reader
+                .read(&mut response_out[read_bytes..])
+                .map_err(|_e| AtError::IOError)?;
+
+            read_bytes += read_bytes_in_iter;
+
+            #[cfg(feature = "defmt")]
+            debug!(
+                "Reading unsolicited message, read on iteration {}, total read {}",
+                read_bytes_in_iter, read_bytes
+            );
+
+            // Check if there are no bytes left, we exhausted the buffer, or we have a break
+            if read_bytes_in_iter == 0
+                || read_bytes >= response_out.len()
+                || (read_bytes >= 2 && &response_out[read_bytes - 2..read_bytes] == b"\r\n")
+            {
+                return Ok(read_bytes);
+            }
+
+            #[cfg(feature = "defmt")]
+            trace!(
+                "Read on unsolicited message {=[u8]:a} bytes",
+                response_out[..read_bytes]
+            );
+        }
+    }
+
     pub fn send_and_wait_response<'b, V: AtRequest + 'b>(
         &'b mut self,
         payload: &V,
@@ -463,6 +536,28 @@ impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: D
             self.send_and_wait_response(&EnterPIN { pin })?;
 
             unlock_tries += 1;
+        }
+    }
+
+    /// Performs a DNS query on the given domain.
+    /// This method can block until there is a DNS response.
+    pub fn query_dns(&mut self, domain: &str) -> Result<CDNSIPResponse, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Querying DNS: {}", domain);
+
+        let dns_request = CDNSGIP { domain };
+
+        self.send_and_wait_response(&dns_request)?;
+
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Trying to read the DNS response");
+
+            let dns_response: Option<CDNSIPResponse> = self.try_to_read_pending_message()?;
+
+            if let Some(dns_response) = dns_response {
+                return Ok(dns_response);
+            }
         }
     }
 }

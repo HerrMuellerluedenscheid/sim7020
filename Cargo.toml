@@ -26,7 +26,7 @@ embedded-hal-async = { version = "1.0.0", optional = true }
 [features]
 default = []
 nonblocking = ["embedded-io-async","embedded-hal-async"]
-defmt = ["dep:defmt", "embedded-io/defmt", "heapless/defmt"]
+defmt = ["dep:defmt", "embedded-io/defmt", "heapless/defmt","defmt/ip_in_core"]
 
 
 # cargo build/run
