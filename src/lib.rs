@@ -7,12 +7,13 @@ pub mod at_command;
 pub mod nonblocking;
 
 pub mod contexts;
+use crate::at_command::at_cdnsgip::CDNSGIP;
 use crate::at_command::at_cpin::{EnterPIN, PINRequired, PinStatus};
 use crate::at_command::csclk::CSCLKMode::HardwareControlled;
 use crate::at_command::csclk::{CSCLKMode, SetCSCLKMode};
 use crate::at_command::flow_control::ControlFlowStatus;
 use crate::at_command::http::HttpClient;
-use crate::at_command::unsolicited_at_responses::at_cdnsip_response::DNSErrors;
+use crate::at_command::unsolicited_at_responses::at_cdnsip_response::{CDNSIPResponse, DNSErrors};
 use crate::at_command::unsolicited_at_responses::AtUnsolicitedResponse;
 #[allow(deprecated)]
 use crate::at_command::AtResponse;
@@ -272,7 +273,7 @@ impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: D
     /// Try to read from the buffer an unsolicited message of type P.
     /// If there is no message the Result will be an OK containing a None
     /// If there is an Error the Result will be Error containing the corresponding error
-    pub async fn try_to_read_pending_message<P: AtUnsolicitedResponse>(
+    pub fn try_to_read_pending_message<P: AtUnsolicitedResponse>(
         &mut self,
     ) -> Result<Option<P>, AtError> {
         #[cfg(feature = "defmt")]
@@ -535,6 +536,28 @@ impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: D
             self.send_and_wait_response(&EnterPIN { pin })?;
 
             unlock_tries += 1;
+        }
+    }
+
+    /// Performs a DNS query on the given domain.
+    /// This method can block until there is a DNS response.
+    pub fn query_dns(&mut self, domain: &str) -> Result<CDNSIPResponse, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Querying DNS: {}", domain);
+
+        let dns_request = CDNSGIP { domain };
+
+        self.send_and_wait_response(&dns_request)?;
+
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Trying to read the DNS response");
+
+            let dns_response: Option<CDNSIPResponse> = self.try_to_read_pending_message()?;
+
+            if let Some(dns_response) = dns_response {
+                return Ok(dns_response);
+            }
         }
     }
 }

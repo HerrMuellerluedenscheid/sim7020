@@ -22,6 +22,8 @@ use embedded_hal_async::delay::DelayNs;
 use embedded_io::Error;
 use embedded_io::ReadReady;
 
+use crate::at_command::at_cdnsgip::CDNSGIP;
+use crate::at_command::unsolicited_at_responses::at_cdnsip_response::CDNSIPResponse;
 use crate::at_command::unsolicited_at_responses::AtUnsolicitedResponse;
 use core::debug_assert;
 
@@ -476,6 +478,28 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
             self.send_and_wait_response(EnterPIN { pin }).await?;
 
             unlock_tries += 1;
+        }
+    }
+
+    /// Performs a DNS query on the given domain.
+    /// This method can block until there is a DNS response.
+    pub async fn query_dns(&mut self, domain: &str) -> Result<CDNSIPResponse, AtError> {
+        #[cfg(feature = "defmt")]
+        debug!("Querying DNS: {}", domain);
+
+        let dns_request = CDNSGIP { domain };
+
+        self.send_and_wait_response(dns_request).await?;
+
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Trying to read the DNS response");
+
+            let dns_response: Option<CDNSIPResponse> = self.try_to_read_pending_message().await?;
+
+            if let Some(dns_response) = dns_response {
+                return Ok(dns_response);
+            }
         }
     }
 }
