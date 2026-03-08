@@ -290,20 +290,52 @@ impl<T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, D: D
 
         let mut buffer = [0u8; BUFFER_SIZE];
 
-        let read_bytes = self
-            .reader
-            .read(&mut buffer)
-            .map_err(|_e| AtError::IOError)?;
+        let unsolicited_message_size = self.read_unsolicited_response(&mut buffer)?;
 
-        let read_buffer = &buffer[..read_bytes];
+        let read_buffer = &buffer[..unsolicited_message_size];
 
         #[cfg(feature = "defmt")]
         {
-            debug!("read {} bytes", read_bytes);
+            debug!("read {} bytes", unsolicited_message_size);
             trace!("Read bytes: {=[u8]:a}", read_buffer);
         }
 
         P::parse_response_struct(read_buffer).map(|result| Some(result))
+    }
+
+    fn read_unsolicited_response(&mut self, response_out: &mut [u8]) -> Result<usize, AtError> {
+        let mut read_bytes = 0usize;
+        loop {
+            #[cfg(feature = "defmt")]
+            debug!("Reading unsolicited message from index {}", read_bytes);
+
+            let read_bytes_in_iter = self
+                .reader
+                .read(&mut response_out[read_bytes..])
+                .map_err(|_e| AtError::IOError)?;
+
+            read_bytes += read_bytes_in_iter;
+
+            #[cfg(feature = "defmt")]
+            debug!(
+                "Reading unsolicited message, read on iteration {}, total read {}",
+                read_bytes_in_iter, read_bytes
+            );
+
+            // Check if there are no bytes left, we exhausted the buffer, or we have a break
+            if read_bytes_in_iter == 0
+                || read_bytes >= response_out.len()
+                || (read_bytes >= 2 && &response_out[read_bytes - 2..read_bytes] == b"\r\n")
+            {
+                return Ok(read_bytes);
+            }
+
+            #[cfg(feature = "defmt")]
+            trace!(
+                "Read on unsolicited message {=[u8]:a} bytes",
+                response_out[..read_bytes]
+            );
+        }
     }
 
     pub fn send_and_wait_response<'b, V: AtRequest + 'b>(
