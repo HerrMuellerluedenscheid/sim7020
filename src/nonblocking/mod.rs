@@ -152,7 +152,7 @@ impl<'a, T: Write, U: Read + ReadReady, PowerPin: OutputPin, DtrPin: OutputPin, 
     }
 
     /// Wakes up the sim module depending on the configuration.
-    /// If the module is not configured for sleep will do nothing (can be configured using [set_sleep_mode].
+    /// If the module is not configured for sleep will do nothing (can be configured using [set_sleep_mode]).
     /// If the module sleep is configured in software mode two AT commands will be sent to wake up.
     /// If the module sleep is configured in hardware mode the pin will be pulled off.
     pub async fn wake_up(&mut self) -> Result<(), AtError> {

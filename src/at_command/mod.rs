@@ -46,6 +46,7 @@ pub mod sleep_indication;
 pub mod socket;
 pub mod wireless;
 pub mod at_cdnsgip;
+pub mod unsolicited_at_responses;
 
 // We have to do this workaround because the derive causes deprecation warnings.
 // The workaround allows deprecations in the deprecated module and then we

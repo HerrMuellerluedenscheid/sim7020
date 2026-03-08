@@ -28,6 +28,7 @@ use embedded_hal::digital::OutputPin;
 use embedded_io::Error;
 use embedded_io::ReadReady;
 pub use embedded_io::{Read, Write};
+use crate::at_command::unsolicited_at_responses::at_cdnsip_response::DNSErrors;
 
 const BUFFER_SIZE: usize = 512;
 const LF: u8 = 10; // n
@@ -65,6 +66,7 @@ pub enum AtError {
     HALError,
     IllegalModuleState,
     IllegalPinStatus(PinStatus),
+    DNSError(DNSErrors)
 }
 
 impl From<ParseError> for AtError {
